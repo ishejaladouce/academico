@@ -248,16 +248,107 @@
         <div class="container">
           <h2 class="section-title">Available Study Partners</h2>
 
+          <!-- Enhanced Results Controls -->
           <div class="results-controls">
             <div class="results-count" id="resultsCount">Found 0 partners</div>
-            <div class="sort-controls">
-              <label for="sortBy">Sort by:</label>
-              <select id="sortBy">
-                <option value="relevance">Relevance</option>
-                <option value="proximity">Proximity</option>
-                <option value="availability">Availability</option>
-              </select>
+
+            <div class="controls-group">
+              <div class="sort-controls">
+                <label for="sortBy">Sort by:</label>
+                <select id="sortBy">
+                  <option value="matchScore">Best Match</option>
+                  <option value="online">Online First</option>
+                  <option value="responseTime">Quick Responders</option>
+                  <option value="recent">Recently Active</option>
+                </select>
+              </div>
+
+              <div class="filter-controls">
+                <button class="filter-btn" id="filterToggle">🔧 Filters</button>
+              </div>
             </div>
+          </div>
+
+          <!-- Filter Panel -->
+          <div class="filter-panel hidden" id="filterPanel">
+            <div class="filter-group">
+              <h4>Study Type</h4>
+              <div class="filter-options">
+                <label
+                  ><input
+                    type="checkbox"
+                    name="studyType"
+                    value="group"
+                    checked
+                  />
+                  Group Study</label
+                >
+                <label
+                  ><input
+                    type="checkbox"
+                    name="studyType"
+                    value="pair"
+                    checked
+                  />
+                  One-on-One</label
+                >
+                <label
+                  ><input
+                    type="checkbox"
+                    name="studyType"
+                    value="project"
+                    checked
+                  />
+                  Project Collaboration</label
+                >
+              </div>
+            </div>
+
+            <div class="filter-group">
+              <h4>Availability</h4>
+              <div class="filter-options">
+                <label
+                  ><input
+                    type="checkbox"
+                    name="availability"
+                    value="morning"
+                    checked
+                  />
+                  Morning</label
+                >
+                <label
+                  ><input
+                    type="checkbox"
+                    name="availability"
+                    value="afternoon"
+                    checked
+                  />
+                  Afternoon</label
+                >
+                <label
+                  ><input
+                    type="checkbox"
+                    name="availability"
+                    value="evening"
+                    checked
+                  />
+                  Evening</label
+                >
+                <label
+                  ><input
+                    type="checkbox"
+                    name="availability"
+                    value="weekend"
+                    checked
+                  />
+                  Weekend</label
+                >
+              </div>
+            </div>
+
+            <button class="apply-filters-btn" id="applyFilters">
+              Apply Filters
+            </button>
           </div>
 
           <div class="results-container" id="resultsContainer">

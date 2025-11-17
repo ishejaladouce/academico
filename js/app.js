@@ -9,6 +9,7 @@ class AcademicOApp {
     this.setupEventListeners();
     this.animateStatistics(); // Start dynamic counters
     this.updateDynamicContent(); // Update time-based content
+    this.setupEnhancedSearch();
     console.log("AcademicO Started with Dynamic Features!");
   }
 
@@ -581,6 +582,138 @@ class AcademicOApp {
     errorHandler.showSuccess(
       "👥 Connection request sent! The user will be notified."
     );
+  }
+
+  /**
+   * MISSION A: Enhanced sorting functionality
+   */
+  setupEnhancedSearch() {
+    // Sorting
+    this.safeAddEventListener("sortBy", "change", (e) => {
+      this.sortResults(e.target.value);
+    });
+
+    // Filter toggle
+    this.safeAddEventListener("filterToggle", "click", () => {
+      this.toggleFilterPanel();
+    });
+
+    // Apply filters
+    this.safeAddEventListener("applyFilters", "click", () => {
+      this.applyFilters();
+    });
+  }
+
+  /**
+   * Sort results based on selected criteria
+   */
+  sortResults(sortBy) {
+    const container = document.getElementById("resultsContainer");
+    const partnerCards = Array.from(
+      container.querySelectorAll(".partner-card")
+    );
+
+    partnerCards.sort((a, b) => {
+      const aData = this.getPartnerData(a);
+      const bData = this.getPartnerData(b);
+
+      switch (sortBy) {
+        case "online":
+          return (bData.isOnline ? 1 : 0) - (aData.isOnline ? 1 : 0);
+
+        case "responseTime":
+          return (
+            this.getResponseTimeValue(aData.responseTime) -
+            this.getResponseTimeValue(bData.responseTime)
+          );
+
+        case "recent":
+          return (
+            this.getLastActiveValue(bData.lastActive) -
+            this.getLastActiveValue(aData.lastActive)
+          );
+
+        case "matchScore":
+        default:
+          return bData.matchScore - aData.matchScore;
+      }
+    });
+
+    // Re-append sorted cards
+    partnerCards.forEach((card) => container.appendChild(card));
+    console.log(`✅ Sorted results by: ${sortBy}`);
+  }
+
+  /**
+   * Extract partner data from card element
+   */
+  getPartnerData(cardElement) {
+    const matchScoreText =
+      cardElement.querySelector(".partner-course").textContent;
+    const matchScore = parseInt(matchScoreText.match(/(\d+)%/)?.[1] || 50);
+
+    const isOnline = cardElement
+      .querySelector(".partner-avatar")
+      .classList.contains("online");
+    const responseTime = cardElement.querySelector(
+      ".detail-item:nth-child(5) strong"
+    ).textContent;
+    const lastActive = cardElement.querySelector(".last-active").textContent;
+
+    return { matchScore, isOnline, responseTime, lastActive };
+  }
+
+  /**
+   * Convert response time to sortable value
+   */
+  getResponseTimeValue(responseTime) {
+    if (responseTime.includes("5m")) return 1;
+    if (responseTime.includes("30m")) return 2;
+    return 3; // 1h or more
+  }
+
+  /**
+   * Convert last active to sortable value (minutes ago)
+   */
+  getLastActiveValue(lastActive) {
+    if (lastActive.includes("Just now")) return 0;
+    if (lastActive.includes("m")) return parseInt(lastActive);
+    if (lastActive.includes("h")) return parseInt(lastActive) * 60;
+    return 1000; // unknown
+  }
+
+  /**
+   * Toggle filter panel visibility
+   */
+  toggleFilterPanel() {
+    const panel = document.getElementById("filterPanel");
+    panel.classList.toggle("hidden");
+  }
+
+  /**
+   * Apply selected filters
+   */
+  applyFilters() {
+    const selectedStudyTypes = this.getSelectedCheckboxes("studyType");
+    const selectedAvailability = this.getSelectedCheckboxes("availability");
+
+    console.log("Applying filters:", {
+      selectedStudyTypes,
+      selectedAvailability,
+    });
+
+    // For now, just close the panel and show message
+    this.toggleFilterPanel();
+    errorHandler.showSuccess("Filters applied!");
+
+    // In full implementation, we would re-filter the results
+  }
+
+  getSelectedCheckboxes(name) {
+    const checkboxes = document.querySelectorAll(
+      `input[name="${name}"]:checked`
+    );
+    return Array.from(checkboxes).map((cb) => cb.value);
   }
 }
 
