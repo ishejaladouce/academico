@@ -10,6 +10,9 @@ class AcademicOApp {
     this.animateStatistics(); // Start dynamic counters
     this.updateDynamicContent(); // Update time-based content
     this.setupEnhancedSearch();
+    this.setupDemoAutoResponder();
+    this.addDemoChatPartners();
+    this.setupDemoUser();
     console.log("AcademicO Started with Dynamic Features!");
   }
 
@@ -714,6 +717,209 @@ class AcademicOApp {
       `input[name="${name}"]:checked`
     );
     return Array.from(checkboxes).map((cb) => cb.value);
+  }
+
+  // ==================== CHAT SYSTEM INTEGRATION ====================
+
+  /**
+   * Start chat with a partner
+   */
+  /**
+   * Start chat with a partner
+   */
+  startChat(partnerId, partnerName) {
+    console.log(`💬 Starting chat with ${partnerName} (${partnerId})`);
+
+    // Safety check - wait for chatService to be ready
+    if (typeof chatService === "undefined" || !chatService.isReady()) {
+      errorHandler.showUserError(
+        "Chat is still loading. Please wait a moment and try again."
+      );
+      console.log("❌ Chat service not ready yet");
+      return;
+    }
+
+    // Set up chat modal
+    document.getElementById("chatPartnerName").textContent = partnerName;
+
+    // Initialize chat with chat service
+    const currentUser = this.currentUser || {
+      id: "demo-user-" + Date.now(),
+      name: "You",
+    };
+    const partner = { id: partnerId, name: partnerName };
+
+    chatService.startChat(currentUser, partner);
+
+    // Setup chat event listeners
+    this.setupChatEvents(currentUser);
+
+    // Open chat modal
+    this.openChatModal();
+
+    errorHandler.showSuccess(
+      `Chat opened with ${partnerName}! Start typing...`
+    );
+  }
+
+  /**
+   * Setup chat input events
+   */
+  setupChatEvents(currentUser) {
+    // Send message on button click
+    this.safeAddEventListener("sendMessageBtn", "click", () => {
+      this.sendChatMessage(currentUser);
+    });
+
+    // Send message on Enter key
+    this.safeAddEventListener("messageInput", "keypress", (e) => {
+      if (e.key === "Enter") {
+        this.sendChatMessage(currentUser);
+      }
+    });
+
+    // Video call button (demo functionality)
+    this.safeAddEventListener("startVideoCall", "click", () => {
+      errorHandler.showSuccess(
+        "📹 Video call would start here! (Integration with WebRTC)"
+      );
+    });
+  }
+
+  /**
+   * Send chat message
+   */
+  sendChatMessage(currentUser) {
+    const messageInput = document.getElementById("messageInput");
+    const messageText = messageInput.value.trim();
+
+    if (!messageText) {
+      errorHandler.showUserError("Please enter a message");
+      return;
+    }
+
+    if (!chatService.currentChat) {
+      errorHandler.showUserError("Chat not properly initialized");
+      return;
+    }
+
+    chatService.sendMessage(currentUser, messageText);
+  }
+
+  /**
+   * Open chat modal
+   */
+  openChatModal() {
+    this.closeModals(); // Close other modals first
+
+    const chatModal = document.getElementById("chatModal");
+    const chatOverlay = document.getElementById("chatOverlay");
+
+    if (chatModal && chatOverlay) {
+      chatModal.classList.remove("hidden");
+      document.body.style.overflow = "hidden";
+
+      // Focus on message input
+      setTimeout(() => {
+        const messageInput = document.getElementById("messageInput");
+        if (messageInput) messageInput.focus();
+      }, 100);
+
+      // Setup close events
+      this.safeAddEventListener("closeChat", "click", () =>
+        this.closeChatModal()
+      );
+      if (chatOverlay) {
+        chatOverlay.onclick = () => this.closeChatModal();
+      }
+    }
+  }
+
+  /**
+   * Close chat modal
+   */
+  closeChatModal() {
+    const chatModal = document.getElementById("chatModal");
+    if (chatModal) {
+      chatModal.classList.add("hidden");
+      document.body.style.overflow = "auto";
+      chatService.closeChat();
+
+      // Clear chat messages for next time
+      const chatMessages = document.getElementById("chatMessages");
+      if (chatMessages) chatMessages.innerHTML = "";
+    }
+  }
+
+  /**
+   * Enhanced safeAddEventListener to handle multiple elements with same ID
+   */
+  safeAddEventListener(elementId, event, handler) {
+    const element = document.getElementById(elementId);
+    if (element) {
+      // Remove existing listener to avoid duplicates
+      element.removeEventListener(event, handler);
+      element.addEventListener(event, handler);
+    }
+  }
+
+  // ==================== DEMO CHAT FUNCTIONALITY ====================
+
+  /**
+   * Demo: Auto-respond to messages (for testing)
+   */
+  setupDemoAutoResponder() {
+    // Listen for new messages and auto-respond
+    if (typeof firebase !== "undefined" && firebase.database) {
+      // This would be where we set up auto-responder for demo
+      console.log("🤖 Demo auto-responder ready");
+    }
+  }
+
+  /**
+   * Add demo chat partners for testing
+   */
+  addDemoChatPartners() {
+    // This ensures there are users to chat with for demo
+    const demoPartners = [
+      {
+        id: "demo-partner-1",
+        name: "Alex Johnson",
+        university: "Computer Science Major",
+        course: "Web Development",
+        availability: "evening",
+        studyType: "group",
+        topic: "JavaScript Frameworks",
+        isOnline: true,
+        matchScore: 95,
+      },
+      {
+        id: "demo-partner-2",
+        name: "Sarah Chen",
+        university: "Mathematics Department",
+        course: "Data Structures",
+        availability: "afternoon",
+        studyType: "pair",
+        topic: "Algorithms",
+        isOnline: false,
+        matchScore: 88,
+      },
+    ];
+
+    // Store for chat access
+    this.demoPartners = demoPartners;
+  }
+
+  setupDemoUser() {
+    // Create a demo user if none exists
+    if (!this.currentUser) {
+      this.currentUser = {
+        id: "demo-user-" + Date.now(),
+        name: "Demo User",
+        email: "demo@academico.com",
+      };
+      console.log("👤 Demo user created:", this.currentUser.id);
+    }
   }
 }
 
