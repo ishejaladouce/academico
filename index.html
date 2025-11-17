@@ -23,6 +23,7 @@
         <nav class="nav">
           <a href="#features" class="nav-link">Features</a>
           <a href="#how-it-works" class="nav-link">How It Works</a>
+          <a href="#search" class="nav-link">Find Partners</a>
           <button class="login-btn" id="loginBtn">Login</button>
         </nav>
       </div>
@@ -35,7 +36,7 @@
           <div class="welcome-content">
             <div class="welcome-text">
               <h1>
-                Welcome to <span class="welcome-highlight">academicO</span>! 🎓
+                Welcome to <span class="welcome-highlight">academicO</span>! 
               </h1>
               <p class="welcome-subtitle">
                 Your platform for finding the perfect study partners
@@ -75,7 +76,7 @@
             </div>
 
             <div class="welcome-visual">
-              <!-- Local SVG - Fast Loading -->
+              <!-- Your SVG stays here -->
               <img
                 src="assets/images/road.svg"
                 alt="Students collaborating on studies"
@@ -84,7 +85,7 @@
               />
               <!-- Fallback text if SVG doesn't load -->
               <div class="vector-fallback" style="display: none">
-                <div style="font-size: 48px; margin-bottom: 20px"></div>
+                <div style="font-size: 48px; margin-bottom: 20px">👨‍🎓👩‍🎓</div>
                 <p>Students Collaborating</p>
               </div>
             </div>
@@ -169,184 +170,93 @@
         </div>
       </section>
 
-      <!-- Login Section - Hidden Initially -->
-      <section class="auth-section hidden" id="loginSection">
+      <!-- Search Section -->
+      <section class="search-section" id="search">
         <div class="container">
-          <div class="auth-card">
-            <div class="auth-header">
-              <h2>Welcome Back! 👋</h2>
-              <p>
-                Login to your AcademicO account and continue your learning
-                journey
-              </p>
-            </div>
+          <h2 class="section-title">Find Your Study Match</h2>
+          <p class="section-subtitle">Search for study partners across universities worldwide</p>
+          
+          <div class="search-card">
+            <form id="studySearchForm" class="search-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="courseInput" class="form-label">
+                    📚 Course
+                  </label>
+                  <input type="text" id="courseInput" placeholder="e.g., Computer Science, Mathematics" required>
+                </div>
 
-            <div class="auth-content">
-              <div class="auth-visual">
-                <img
-                  src="assets/vectors/login.svg"
-                  alt="Login to AcademicO"
-                  class="auth-vector"
-                  onerror="this.style.display='none'"
-                />
-                <div class="vector-fallback" style="display: none">
-                  <div style="font-size: 48px; margin-bottom: 20px">🔐</div>
-                  <p>Secure Login</p>
+                <div class="form-group">
+                  <label for="topicInput" class="form-label">
+                    🎯 Topic
+                  </label>
+                  <input type="text" id="topicInput" placeholder="e.g., Web Development, Calculus">
                 </div>
               </div>
 
-              <form class="auth-form" id="loginForm">
+              <div class="form-row">
                 <div class="form-group">
-                  <label for="email">Email Address</label>
-                  <input
-                    type="email"
-                    id="email"
-                    placeholder="your.email@university.edu"
-                    required
-                  />
+                  <label for="availabilitySelect" class="form-label">
+                    ⏰ Availability
+                  </label>
+                  <select id="availabilitySelect">
+                    <option value="">Any time</option>
+                    <option value="morning">Mornings</option>
+                    <option value="afternoon">Afternoons</option>
+                    <option value="evening">Evenings</option>
+                    <option value="weekend">Weekends</option>
+                  </select>
                 </div>
 
                 <div class="form-group">
-                  <label for="password">Password</label>
-                  <input
-                    type="password"
-                    id="password"
-                    placeholder="Enter your password"
-                    required
-                  />
-                </div>
-
-                <button type="submit" class="auth-submit-btn">
-                  🔐 Login to AcademicO
-                </button>
-
-                <div class="auth-links">
-                  <a href="#" class="auth-link">Forgot password?</a>
-                  <span>•</span>
-                  <a href="#" class="auth-link" id="showRegisterLink"
-                    >Create new account</a
-                  >
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Register Section - Hidden Initially -->
-      <section class="auth-section hidden" id="registerSection">
-        <div class="container">
-          <div class="auth-card">
-            <div class="auth-header">
-              <h2>Join AcademicO!</h2>
-              <p>Create your account and start studying smarter today</p>
-            </div>
-
-            <div class="auth-content">
-              <div class="auth-visual">
-                <img
-                  src="assets/vectors/collaboration.svg"
-                  alt="Join AcademicO"
-                  class="auth-vector"
-                  onerror="this.style.display='none'"
-                />
-                <div class="vector-fallback" style="display: none">
-                  <div style="font-size: 48px; margin-bottom: 20px">👥</div>
-                  <p>Join Community</p>
+                  <label for="studyTypeSelect" class="form-label">
+                    👥 Study Style
+                  </label>
+                  <select id="studyTypeSelect">
+                    <option value="">Any style</option>
+                    <option value="group">Group Study</option>
+                    <option value="pair">One-on-One</option>
+                    <option value="project">Project Collaboration</option>
+                  </select>
                 </div>
               </div>
 
-              <form class="auth-form" id="registerForm">
-                <div class="form-group">
-                  <label for="fullName">Full Name</label>
-                  <input
-                    type="text"
-                    id="fullName"
-                    placeholder="Enter your full name"
-                    required
-                  />
-                </div>
-
-                <div class="form-group">
-                  <label for="regEmail">University Email</label>
-                  <input
-                    type="email"
-                    id="regEmail"
-                    placeholder="your.name@university.edu"
-                    required
-                  />
-                </div>
-
-                <div class="form-group">
-                  <label for="regPassword">Create Password</label>
-                  <input
-                    type="password"
-                    id="regPassword"
-                    placeholder="Choose a secure password"
-                    required
-                  />
-                </div>
-
-                <div class="form-group">
-                  <label for="confirmPassword">Confirm Password</label>
-                  <input
-                    type="password"
-                    id="confirmPassword"
-                    placeholder="Re-enter your password"
-                    required
-                  />
-                </div>
-
-                <button type="submit" class="auth-submit-btn">
-                  🚀 Create Account
-                </button>
-
-                <div class="auth-links">
-                  <a href="#" class="auth-link" id="showLoginLink"
-                    >Already have an account? Login</a
-                  >
-                </div>
-              </form>
-            </div>
+              <button type="submit" class="search-button">
+                🔍 Search Study Partners
+              </button>
+            </form>
           </div>
         </div>
       </section>
 
-      <!-- Main App Section - Hidden Until Login -->
-      <section class="app-section hidden" id="appSection">
+      <!-- Results Section -->
+      <section class="results-section hidden" id="resultsSection">
         <div class="container">
-          <div class="app-placeholder">
-            <h2>Welcome to Your AcademicO Dashboard!</h2>
-            <p>
-              You've successfully logged in. The study partner matching features
-              will be available here.
-            </p>
-            <div
-              style="
-                margin-top: 30px;
-                padding: 20px;
-                background: #f8f9fa;
-                border-radius: 8px;
-              "
-            >
-              <h3 style="color: #2c3e50; margin-bottom: 15px">What's Next?</h3>
-              <ul style="text-align: left; color: #5d6d7e; line-height: 1.8">
-                <li>Complete your academic profile</li>
-                <li>Search for study partners in your courses</li>
-                <li>Join or create study groups</li>
-                <li>Share resources and collaborate</li>
-              </ul>
+          <h2 class="section-title">Available Study Partners</h2>
+          
+          <div class="results-controls">
+            <div class="results-count" id="resultsCount">Found 0 partners</div>
+            <div class="sort-controls">
+              <label for="sortBy">Sort by:</label>
+              <select id="sortBy">
+                <option value="relevance">Relevance</option>
+                <option value="proximity">Proximity</option>
+                <option value="availability">Availability</option>
+              </select>
             </div>
-            <button
-              class="auth-btn primary"
-              style="margin-top: 30px"
-              onclick="authManager.showWelcome()"
-            >
-              ← Back to Welcome
-            </button>
+          </div>
+
+          <div class="results-container" id="resultsContainer">
+            <!-- Results will appear here -->
           </div>
         </div>
       </section>
+
+      <!-- Loading Section -->
+      <div class="loading-section hidden" id="loadingSection">
+        <div class="loading-spinner"></div>
+        <p>Searching for study partners worldwide...</p>
+      </div>
     </main>
 
     <footer class="footer">
@@ -357,6 +267,34 @@
         </p>
       </div>
     </footer>
+
+    <!-- Chat Modal -->
+    <div class="modal hidden" id="chatModal">
+      <div class="modal-overlay" id="chatOverlay"></div>
+      <div class="modal-content chat-modal">
+        <button class="modal-close" id="closeChat">&times;</button>
+
+        <div class="chat-header">
+          <h3>Chat with <span id="chatPartnerName">Partner</span></h3>
+          <button class="video-call-btn" id="startVideoCall">
+            📹 Start Video Call
+          </button>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+          <!-- Messages will appear here -->
+        </div>
+
+        <div class="chat-input">
+          <input
+            type="text"
+            id="messageInput"
+            placeholder="Type your message..."
+          />
+          <button id="sendMessageBtn">Send</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Login Modal -->
     <div class="modal hidden" id="loginModal">
