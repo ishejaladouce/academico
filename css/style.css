@@ -1229,6 +1229,41 @@ body {
     background: #2c5aa0;
 }
 
+/* ===== MISSION C: Timezone Compatibility Badges ===== */
+.tz-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin: 10px 0;
+    text-align: center;
+    border: 2px solid transparent;
+}
+
+.tz-badge.excellent {
+    background: #e8f5e8;
+    color: #2d5a2d;
+    border-color: #4caf50;
+}
+
+.tz-badge.good {
+    background: #e3f2fd;
+    color: #1a3d6d;
+    border-color: #2196f3;
+}
+
+.tz-badge.fair {
+    background: #fff3e0;
+    color: #7d5a29;
+    border-color: #ff9800;
+}
+
+.tz-badge.challenging {
+    background: #ffebee;
+    color: #8b2e3d;
+    border-color: #f44336;
+}
+
 /* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 768px) {
     .container {

@@ -470,6 +470,31 @@ class AcademicOApp {
   }
 
   /**
+   * MISSION C: Calculate timezone compatibility
+   */
+  calculateTimezoneCompatibility(partner) {
+    // Get current user's timezone info
+    const userOffset = -new Date().getTimezoneOffset() / 60;
+
+    // Generate realistic partner timezone (for demo)
+    const offsets = [0, 1, 2, 3, -5, -8, 5, 7, -3, -1];
+    const partnerOffset = offsets[Math.floor(Math.random() * offsets.length)];
+
+    const diff = Math.abs(userOffset - partnerOffset);
+
+    // Calculate compatibility
+    if (diff <= 2) {
+      return { score: 95, level: "excellent", label: "Same Region" };
+    } else if (diff <= 4) {
+      return { score: 80, level: "good", label: "Nearby" };
+    } else if (diff <= 6) {
+      return { score: 65, level: "fair", label: "Moderate" };
+    } else {
+      return { score: 50, level: "challenging", label: "Distant" };
+    }
+  }
+
+  /**
    * DYNAMIC: Show enhanced results
    */
   showDynamicResults(partners, filters) {
@@ -494,8 +519,12 @@ class AcademicOApp {
             `;
     } else {
       container.innerHTML = partners
-        .map(
-          (partner) => `
+        .map((partner) => {
+          // Calculate timezone compatibility
+          const tzCompatibility = this.calculateTimezoneCompatibility(partner);
+          const badgeClass = `tz-badge ${tzCompatibility.level}`;
+
+          return `
                 <div class="partner-card">
                     <div class="partner-header">
                         <div class="partner-avatar ${
@@ -515,6 +544,14 @@ class AcademicOApp {
           }% match</span>
                         </div>
                     </div>
+                    
+                    <!-- NEW: Timezone Compatibility Badge -->
+                    <div class="${badgeClass}">
+                        🌍 ${tzCompatibility.label} • ${
+            tzCompatibility.score
+          }% time match
+                    </div>
+                    
                     <div class="partner-details">
                         <div class="detail-item">📚 <strong>Topic:</strong> ${
                           partner.topic
@@ -548,8 +585,8 @@ class AcademicOApp {
                         </button>
                     </div>
                 </div>
-            `
-        )
+            `;
+        })
         .join("");
     }
 
@@ -576,9 +613,36 @@ class AcademicOApp {
   }
 
   startChat(userId, userName) {
-    errorHandler.showSuccess(
-      `💬 Chat feature would open with ${userName}!\n\nThis would connect to our real-time chat system.`
-    );
+    console.log(`💬 Starting chat with ${userName} (${userId})`);
+
+    // Safety check - wait for chatService to be ready
+    if (typeof chatService === "undefined" || !chatService.isReady()) {
+      errorHandler.showUserError(
+        "Chat is still loading. Please wait a moment and try again."
+      );
+      console.log("❌ Chat service not ready yet");
+      return;
+    }
+
+    // Set up chat modal
+    document.getElementById("chatPartnerName").textContent = userName;
+
+    // Initialize chat with chat service
+    const currentUser = this.currentUser || {
+      id: "demo-user-" + Date.now(),
+      name: "You",
+    };
+    const partner = { id: userId, name: userName };
+
+    chatService.startChat(currentUser, partner);
+
+    // Setup chat event listeners
+    this.setupChatEvents(currentUser);
+
+    // Open chat modal
+    this.openChatModal();
+
+    errorHandler.showSuccess(`Chat opened with ${userName}! Start typing...`);
   }
 
   connectPartner(userId) {
@@ -720,47 +784,6 @@ class AcademicOApp {
   }
 
   // ==================== CHAT SYSTEM INTEGRATION ====================
-
-  /**
-   * Start chat with a partner
-   */
-  /**
-   * Start chat with a partner
-   */
-  startChat(partnerId, partnerName) {
-    console.log(`💬 Starting chat with ${partnerName} (${partnerId})`);
-
-    // Safety check - wait for chatService to be ready
-    if (typeof chatService === "undefined" || !chatService.isReady()) {
-      errorHandler.showUserError(
-        "Chat is still loading. Please wait a moment and try again."
-      );
-      console.log("❌ Chat service not ready yet");
-      return;
-    }
-
-    // Set up chat modal
-    document.getElementById("chatPartnerName").textContent = partnerName;
-
-    // Initialize chat with chat service
-    const currentUser = this.currentUser || {
-      id: "demo-user-" + Date.now(),
-      name: "You",
-    };
-    const partner = { id: partnerId, name: partnerName };
-
-    chatService.startChat(currentUser, partner);
-
-    // Setup chat event listeners
-    this.setupChatEvents(currentUser);
-
-    // Open chat modal
-    this.openChatModal();
-
-    errorHandler.showSuccess(
-      `Chat opened with ${partnerName}! Start typing...`
-    );
-  }
 
   /**
    * Setup chat input events

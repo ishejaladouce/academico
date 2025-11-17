@@ -83,3 +83,45 @@ const apiService = {
     };
   },
 };
+
+// Enhanced timezone functionality
+const timezoneService = {
+  // Get detailed timezone info
+  getDetailedTimezone() {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const now = new Date();
+    const offset = -now.getTimezoneOffset() / 60; // Hours from UTC
+
+    return {
+      timezone,
+      offset,
+      currentHour: now.getHours(),
+      dayPeriod: this.getDayPeriod(now.getHours()),
+      location: this.getTimezoneLocation(timezone),
+    };
+  },
+
+  getDayPeriod(hour) {
+    if (hour >= 5 && hour < 12) return "morning";
+    if (hour >= 12 && hour < 17) return "afternoon";
+    if (hour >= 17 && hour < 22) return "evening";
+    return "night";
+  },
+
+  getTimezoneLocation(tz) {
+    // Simple location extraction from timezone string
+    const parts = tz.split("/");
+    return parts.length > 1 ? parts[1].replace("_", " ") : "Unknown";
+  },
+
+  // Calculate compatibility between two timezones
+  calculateCompatibility(userTz, partnerTz) {
+    const diff = Math.abs(userTz.offset - partnerTz.offset);
+
+    if (diff <= 2)
+      return { score: 95, level: "excellent", label: "Same Region" };
+    if (diff <= 4) return { score: 80, level: "good", label: "Nearby" };
+    if (diff <= 6) return { score: 65, level: "fair", label: "Moderate" };
+    return { score: 50, level: "challenging", label: "Distant" };
+  },
+};
