@@ -1,117 +1,88 @@
-// Modal Authentication System
-class ModalAuth {
+// Simple User Registration & Search
+class AuthManager {
     constructor() {
+        this.db = null;
         this.init();
     }
 
-    init() {
-        this.bindModalEvents();
+    async init() {
+        // Load Firebase
+        await this.loadFirebase();
+        
+        // Your Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyAuAmhkTWhWWUmJvdBYBydE8Wly0ZNHTBY",
+            authDomain: "academico-chat.firebaseapp.com",
+            projectId: "academico-chat",
+            storageBucket: "academico-chat.firebasestorage.app",
+            messagingSenderId: "786614809148",
+            appId: "1:786614809148:web:31eada9340cb351f6b8939"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        this.db = firebase.firestore();
+        console.log('AcademicO Auth Ready!');
     }
 
-    bindModalEvents() {
-        // Open Login Modal
-        document.getElementById('loginBtn').addEventListener('click', () => this.openLogin());
-        document.getElementById('loginBtnMain').addEventListener('click', () => this.openLogin());
-        
-        // Open Register Modal
-        document.getElementById('registerBtnMain').addEventListener('click', () => this.openRegister());
-
-        // Close Modals
-        document.getElementById('closeLogin').addEventListener('click', () => this.closeLogin());
-        document.getElementById('closeRegister').addEventListener('click', () => this.closeRegister());
-        
-        // Overlay clicks
-        document.getElementById('loginOverlay').addEventListener('click', () => this.closeLogin());
-        document.getElementById('registerOverlay').addEventListener('click', () => this.closeRegister());
-
-        // Switch between modals
-        document.getElementById('showRegisterModal').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.closeLogin();
-            this.openRegister();
+    loadFirebase() {
+        return new Promise((resolve) => {
+            const script = document.createElement('script');
+            script.src = 'https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js';
+            script.onload = () => {
+                const script2 = document.createElement('script');
+                script2.src = 'https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js';
+                script2.onload = resolve;
+                document.head.appendChild(script2);
+            };
+            document.head.appendChild(script);
         });
+    }
 
-        document.getElementById('showLoginModal').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.closeRegister();
-            this.openLogin();
-        });
+    // Simple user registration
+    async registerUser(userData) {
+        try {
+            const userRef = this.db.collection('users').doc();
+            await userRef.set({
+                id: userRef.id,
+                name: userData.name,
+                email: userData.email,
+                course: userData.course,
+                university: userData.university || 'Student',
+                availability: userData.availability,
+                studyType: userData.studyType,
+                topic: userData.topic,
+                createdAt: new Date()
+            });
+            return userRef.id;
+        } catch (error) {
+            throw error;
+        }
+    }
 
-        // Form submissions
-        document.getElementById('loginForm').addEventListener('submit', (e) => this.handleLogin(e));
-        document.getElementById('registerForm').addEventListener('submit', (e) => this.handleRegister(e));
-
-        // ESC key to close modals
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                this.closeLogin();
-                this.closeRegister();
+    // Simple user search
+    async searchUsers(filters) {
+        try {
+            let query = this.db.collection('users');
+            
+            if (filters.course) {
+                query = query.where('course', '==', filters.course);
             }
-        });
-    }
+            if (filters.availability) {
+                query = query.where('availability', '==', filters.availability);
+            }
 
-    openLogin() {
-        document.getElementById('loginModal').classList.remove('hidden');
-        document.body.style.overflow = 'hidden'; // Prevent background scroll
-    }
+            const snapshot = await query.limit(10).get();
+            const users = [];
+            
+            snapshot.forEach(doc => {
+                users.push(doc.data());
+            });
 
-    openRegister() {
-        document.getElementById('registerModal').classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-    }
-
-    closeLogin() {
-        document.getElementById('loginModal').classList.add('hidden');
-        document.body.style.overflow = 'auto';
-        document.getElementById('loginForm').reset();
-    }
-
-    closeRegister() {
-        document.getElementById('registerModal').classList.add('hidden');
-        document.body.style.overflow = 'auto';
-        document.getElementById('registerForm').reset();
-    }
-
-    handleLogin(e) {
-        e.preventDefault();
-        const email = document.getElementById('loginEmail').value;
-        const password = document.getElementById('loginPassword').value;
-
-        if (!email || !password) {
-            alert('Please fill in all fields');
-            return;
+            return users;
+        } catch (error) {
+            throw error;
         }
-
-        // Simulate login success
-        alert(`Welcome back! Login functionality would be implemented here.`);
-        this.closeLogin();
-    }
-
-    handleRegister(e) {
-        e.preventDefault();
-        const fullName = document.getElementById('regFullName').value;
-        const email = document.getElementById('regEmail').value;
-        const password = document.getElementById('regPassword').value;
-        const confirmPassword = document.getElementById('regConfirmPassword').value;
-
-        if (!fullName || !email || !password || !confirmPassword) {
-            alert('Please fill in all fields');
-            return;
-        }
-
-        if (password !== confirmPassword) {
-            alert('Passwords do not match');
-            return;
-        }
-
-        // Simulate registration success
-        alert(`Welcome to AcademicO, ${fullName}! Registration would be saved to database.`);
-        this.closeRegister();
-        this.openLogin(); // Redirect to login after registration
     }
 }
 
-// Initialize when page loads
-document.addEventListener('DOMContentLoaded', () => {
-    new ModalAuth();
-});
+const authManager = new AuthManager();

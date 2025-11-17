@@ -36,7 +36,7 @@
           <div class="welcome-content">
             <div class="welcome-text">
               <h1>
-                Welcome to <span class="welcome-highlight">academicO</span>! 
+                Welcome to <span class="welcome-highlight">academicO</span>!
               </h1>
               <p class="welcome-subtitle">
                 Your platform for finding the perfect study partners
@@ -73,6 +73,11 @@
                   New Here? Register
                 </button>
               </div>
+
+              <!-- STUDY BREAK BUTTON - ADD THIS RIGHT AFTER AUTH-BUTTONS -->
+              <button class="study-break-btn" id="studyBreakBtn">
+                🎯 Need a Study Break?
+              </button>
             </div>
 
             <div class="welcome-visual">
@@ -174,8 +179,10 @@
       <section class="search-section" id="search">
         <div class="container">
           <h2 class="section-title">Find Your Study Match</h2>
-          <p class="section-subtitle">Search for study partners across universities worldwide</p>
-          
+          <p class="section-subtitle">
+            Search for study partners across universities worldwide
+          </p>
+
           <div class="search-card">
             <form id="studySearchForm" class="search-form">
               <div class="form-row">
@@ -183,14 +190,21 @@
                   <label for="courseInput" class="form-label">
                     📚 Course
                   </label>
-                  <input type="text" id="courseInput" placeholder="e.g., Computer Science, Mathematics" required>
+                  <input
+                    type="text"
+                    id="courseInput"
+                    placeholder="e.g., Computer Science, Mathematics"
+                    required
+                  />
                 </div>
 
                 <div class="form-group">
-                  <label for="topicInput" class="form-label">
-                    🎯 Topic
-                  </label>
-                  <input type="text" id="topicInput" placeholder="e.g., Web Development, Calculus">
+                  <label for="topicInput" class="form-label"> 🎯 Topic </label>
+                  <input
+                    type="text"
+                    id="topicInput"
+                    placeholder="e.g., Web Development, Calculus"
+                  />
                 </div>
               </div>
 
@@ -233,7 +247,7 @@
       <section class="results-section hidden" id="resultsSection">
         <div class="container">
           <h2 class="section-title">Available Study Partners</h2>
-          
+
           <div class="results-controls">
             <div class="results-count" id="resultsCount">Found 0 partners</div>
             <div class="sort-controls">
@@ -400,6 +414,8 @@
       </div>
     </div>
 
+    <script src="js/errorHandler.js"></script>
+    <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/app.js"></script>
   </body>
