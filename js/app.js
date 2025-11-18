@@ -1,4 +1,4 @@
-// Complete AcademicO App - WITH MISSION D ENHANCEMENTS
+// Complete AcademicO App - WITH DYNAMIC COUNTRIES & UNIVERSITIES
 class AcademicOApp {
   constructor() {
     this.currentUser = null;
@@ -7,15 +7,269 @@ class AcademicOApp {
 
   init() {
     this.setupEventListeners();
-    this.animateStatistics(); // Start dynamic counters
-    this.updateDynamicContent(); // Update time-based content
+    this.animateStatistics();
+    this.updateDynamicContent();
     this.setupEnhancedSearch();
     this.setupDemoAutoResponder();
     this.addDemoChatPartners();
     this.setupDemoUser();
-    this.setupNetworkMonitoring(); // MISSION D: Network monitoring
-    console.log("AcademicO Started with Enhanced Error Handling!");
+    this.setupNetworkMonitoring();
+    
+    // Load countries when app starts
+    this.loadCountriesOnStart();
+    
+    console.log("AcademicO Started with Dynamic Countries & Universities!");
   }
+
+  // ==================== DYNAMIC COUNTRIES & UNIVERSITIES ====================
+
+  /**
+   * Load countries when app starts
+   */
+  async loadCountriesOnStart() {
+    try {
+      console.log('🌍 Loading countries on startup...');
+      await countriesService.loadCountries();
+      console.log('✅ Countries loaded successfully');
+    } catch (error) {
+      console.log('❌ Failed to load countries on startup:', error);
+    }
+  }
+
+  /**
+   * Setup country and university events when register modal opens
+   */
+  setupCountryUniversityEvents() {
+    // Country change event
+    this.safeAddEventListener('regCountry', 'change', (e) => {
+      this.handleCountryChange(e.target.value);
+    });
+
+    // University change event for "Other" option
+    this.safeAddEventListener('regUniversity', 'change', (e) => {
+      universitiesService.handleUniversityChange('regUniversity');
+    });
+  }
+
+  /**
+   * Handle country change - load universities for selected country
+   */
+  async handleCountryChange(countryCode) {
+    if (!countryCode) return;
+    
+    console.log(`🌍 Country changed to: ${countryCode}`);
+    
+    // Show loading for universities
+    this.showInlineLoading('regUniversity', 'Loading universities...');
+    
+    try {
+      // Load universities for the selected country
+      const universitiesData = await universitiesService.loadUniversities(countryCode);
+      
+      // Populate university dropdown
+      universitiesService.populateUniversityDropdown('regUniversity', universitiesData.universities);
+      
+      console.log(`✅ Loaded ${universitiesData.universities.length} universities for ${countriesService.getCountryName(countryCode)}`);
+    } catch (error) {
+      console.log('❌ Failed to load universities:', error);
+      errorHandler.showUserError('Failed to load universities. Please try again.');
+    }
+  }
+
+  /**
+   * Populate country dropdown when register modal opens
+   */
+  populateCountryDropdown() {
+    const countrySelect = document.getElementById('regCountry');
+    if (!countrySelect) {
+      console.log('❌ Country select element not found');
+      return;
+    }
+
+    // Clear loading message
+    countrySelect.innerHTML = '<option value="">Select your country</option>';
+    
+    // Populate with countries
+    countriesService.populateCountryDropdown('regCountry');
+    
+    console.log('✅ Country dropdown populated');
+  }
+
+  // ==================== MODAL MANAGEMENT ====================
+
+  /**
+   * Open modal with enhanced functionality
+   */
+  openModal(modalId) {
+    this.closeModals();
+    const modal = document.getElementById(modalId);
+    if (modal) {
+      modal.classList.remove("hidden");
+      document.body.style.overflow = "hidden";
+
+      // Special handling for register modal
+      if (modalId === "registerModal") {
+        this.setupCountryUniversityEvents();
+        this.populateCountryDropdown();
+      }
+    }
+  }
+
+  // ==================== ENHANCED REGISTRATION ====================
+
+  async handleRegister(e) {
+    e.preventDefault();
+
+    // Show loading for registration
+    this.showLoading('Creating your account...');
+
+    // Get country and university values
+    const countrySelect = document.getElementById('regCountry');
+    const universityValue = universitiesService.getUniversityValue('regUniversity', 'customUniversity');
+    
+    if (!countrySelect.value) {
+      errorHandler.showUserError("Please select your country");
+      this.hideLoading();
+      return;
+    }
+
+    if (!universityValue) {
+      errorHandler.showUserError("Please select or enter your university");
+      this.hideLoading();
+      return;
+    }
+
+    // UPDATED: Include new availability and study type fields
+    const userData = {
+      name: document.getElementById("regFullName").value,
+      email: document.getElementById("regEmail").value,
+      country: countrySelect.options[countrySelect.selectedIndex].text,
+      countryCode: countrySelect.value,
+      university: universityValue,
+      course: document.getElementById("regCourse").value,
+      availability: document.getElementById("regAvailability").value,
+      studyType: document.getElementById("regStudyType").value,
+      topic: document.getElementById("topicInput").value || "General",
+    };
+
+    // Validate passwords
+    const password = document.getElementById("regPassword").value;
+    const confirmPassword = document.getElementById("regConfirmPassword").value;
+
+    if (password !== confirmPassword) {
+      errorHandler.showUserError("Passwords do not match!");
+      this.hideLoading();
+      return;
+    }
+
+    try {
+      const userId = await authManager.registerUser(userData);
+      errorHandler.showSuccess(
+        "🎉 Welcome to AcademicO! You are now in our global network."
+      );
+      this.closeModals();
+      this.currentUser = { ...userData, id: userId };
+
+      // Refresh statistics to include new user
+      this.animateStatistics();
+    } catch (error) {
+      errorHandler.handleApiError(error, "registration");
+    } finally {
+      // Hide loading
+      this.hideLoading();
+    }
+  }
+
+  // ==================== MISSION D: ENHANCED LOADING & ERROR HANDLING ====================
+
+  /**
+   * Show loading state
+   */
+  showLoading(message = "Loading...") {
+    this.hideLoading();
+    
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'globalLoading';
+    loadingDiv.innerHTML = `
+        <div class="loading-overlay">
+            <div class="loading-spinner-large"></div>
+            <p>${message}</p>
+        </div>
+    `;
+    
+    loadingDiv.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        color: white;
+        font-size: 18px;
+    `;
+    
+    document.body.appendChild(loadingDiv);
+  }
+
+  /**
+   * Hide loading state
+   */
+  hideLoading() {
+    const existingLoader = document.getElementById('globalLoading');
+    if (existingLoader) {
+      existingLoader.remove();
+    }
+  }
+
+  /**
+   * Show inline loading for specific sections
+   */
+  showInlineLoading(containerId, message = "Loading...") {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    // Save original content
+    if (!container.dataset.originalContent) {
+      container.dataset.originalContent = container.innerHTML;
+    }
+    
+    container.innerHTML = `
+        <div class="inline-loading">
+            <div class="loading-spinner-small"></div>
+            <p style="font-size: 12px; color: #666; margin: 0;">${message}</p>
+        </div>
+    `;
+  }
+
+  /**
+   * Hide inline loading
+   */
+  hideInlineLoading(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container || !container.dataset.originalContent) return;
+    
+    container.innerHTML = container.dataset.originalContent;
+    delete container.dataset.originalContent;
+  }
+
+  /**
+   * Enhanced error handling for network failures
+   */
+  setupNetworkMonitoring() {
+    window.addEventListener('online', () => {
+      errorHandler.showSuccess('🌐 Connection restored!');
+    });
+    
+    window.addEventListener('offline', () => {
+      errorHandler.showUserError('📡 You appear to be offline. Some features may not work.');
+    });
+  }
+
+  // ==================== EVENT LISTENERS ====================
 
   setupEventListeners() {
     // Safe event listener setup
@@ -28,6 +282,11 @@ class AcademicOApp {
     this.safeAddEventListener("studySearchForm", "submit", (e) =>
       this.handleSearch(e)
     );
+
+    // ADDED: University change event for "Other" option
+    this.safeAddEventListener('regUniversity', 'change', (e) => {
+      universitiesService.handleUniversityChange('regUniversity');
+    });
 
     // Modal open buttons
     this.safeAddEventListener("loginBtn", "click", () =>
@@ -62,7 +321,7 @@ class AcademicOApp {
       this.closeModals()
     );
 
-    // Study break button (new dynamic feature)
+    // Study break button
     this.safeAddEventListener("studyBreakBtn", "click", () =>
       this.getStudyBreakActivity()
     );
@@ -73,314 +332,10 @@ class AcademicOApp {
     });
   }
 
-  // ==================== MISSION D: ENHANCED LOADING & ERROR HANDLING ====================
-
-  /**
-   * MISSION D: Show loading state
-   */
-  showLoading(message = "Loading...") {
-      this.hideLoading(); // Clear any existing loaders
-      
-      const loadingDiv = document.createElement('div');
-      loadingDiv.id = 'globalLoading';
-      loadingDiv.innerHTML = `
-          <div class="loading-overlay">
-              <div class="loading-spinner-large"></div>
-              <p>${message}</p>
-          </div>
-      `;
-      
-      loadingDiv.style.cssText = `
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0, 0, 0, 0.7);
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          z-index: 10000;
-          color: white;
-          font-size: 18px;
-      `;
-      
-      document.body.appendChild(loadingDiv);
-  }
-
-  /**
-   * MISSION D: Hide loading state
-   */
-  hideLoading() {
-      const existingLoader = document.getElementById('globalLoading');
-      if (existingLoader) {
-          existingLoader.remove();
-      }
-  }
-
-  /**
-   * MISSION D: Show inline loading for specific sections
-   */
-  showInlineLoading(containerId, message = "Loading...") {
-      const container = document.getElementById(containerId);
-      if (!container) return;
-      
-      // Save original content
-      if (!container.dataset.originalContent) {
-          container.dataset.originalContent = container.innerHTML;
-      }
-      
-      container.innerHTML = `
-          <div class="inline-loading">
-              <div class="loading-spinner"></div>
-              <p>${message}</p>
-          </div>
-      `;
-  }
-
-  /**
-   * MISSION D: Hide inline loading
-   */
-  hideInlineLoading(containerId) {
-      const container = document.getElementById(containerId);
-      if (!container || !container.dataset.originalContent) return;
-      
-      container.innerHTML = container.dataset.originalContent;
-      delete container.dataset.originalContent;
-  }
-
-  /**
-   * MISSION D: Enhanced error handling for network failures
-   */
-  setupNetworkMonitoring() {
-      // Monitor online/offline status
-      window.addEventListener('online', () => {
-          errorHandler.showSuccess('🌐 Connection restored!');
-          console.log('✅ App is back online');
-      });
-      
-      window.addEventListener('offline', () => {
-          errorHandler.showUserError('📡 You appear to be offline. Some features may not work.');
-          console.log('❌ App is offline');
-      });
-  }
-
-  // ==================== DYNAMIC FEATURES ====================
-
-  /**
-   * DYNAMIC: Get live statistics from Firebase (not hardcoded)
-   */
-  async getLiveStatistics() {
-    try {
-      // If Firebase is available, get real data
-      if (typeof firebase !== "undefined" && firebase.firestore) {
-        const db = firebase.firestore();
-        const usersSnapshot = await db.collection("users").get();
-        const userCount = usersSnapshot.size;
-
-        // Calculate active courses
-        const courses = new Set();
-        usersSnapshot.forEach((doc) => {
-          const userData = doc.data();
-          if (userData.course) courses.add(userData.course);
-        });
-
-        return {
-          students: userCount,
-          groups: Math.max(1, Math.floor(userCount / 3)), // Dynamic calculation
-          courses: Math.max(1, courses.size),
-        };
-      }
-    } catch (error) {
-      console.log("Firebase not available, using dynamic fallback");
-    }
-
-    // Fallback: Still dynamic but based on time/random
-    const baseCount = Math.floor(Math.random() * 100) + 50; // Random but realistic
-    return {
-      students: baseCount,
-      groups: Math.max(1, Math.floor(baseCount / 4)),
-      courses: Math.max(1, Math.floor(baseCount / 10)),
-    };
-  }
-
-  /**
-   * DYNAMIC: Animate statistics counters with real data
-   */
-  async animateStatistics() {
-    const stats = await this.getLiveStatistics();
-
-    Object.keys(stats).forEach((stat, index) => {
-      const element = document.getElementById(stat + "Count");
-      if (element) {
-        this.animateCount(element, 0, stats[stat], 2000 + index * 500);
-      }
-    });
-  }
-
-  /**
-   * DYNAMIC: Animate number counting
-   */
-  animateCount(element, start, end, duration) {
-    let startTimestamp = null;
-    const step = (timestamp) => {
-      if (!startTimestamp) startTimestamp = timestamp;
-      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-      const value = Math.floor(progress * (end - start) + start);
-      element.textContent = value.toLocaleString();
-      if (progress < 1) {
-        window.requestAnimationFrame(step);
-      }
-    };
-    window.requestAnimationFrame(step);
-  }
-
-  /**
-   * DYNAMIC: Update content based on time of day
-   */
-  updateDynamicContent() {
-    // Dynamic greeting
-    const greeting = this.getDynamicGreeting();
-    const subtitleElement = document.querySelector(".welcome-subtitle");
-    if (subtitleElement) {
-      subtitleElement.textContent = greeting;
-    }
-
-    // Dynamic study tip
-    const tips = this.getDynamicStudyTips();
-    const randomTip = tips[Math.floor(Math.random() * tips.length)];
-
-    // Add study tip to page if tip element exists, or create it
-    this.displayStudyTip(randomTip);
-  }
-
-  /**
-   * DYNAMIC: Get greeting based on current time
-   */
-  getDynamicGreeting() {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning! Ready to study? 🌅";
-    if (hour < 18) return "Good afternoon! Let's learn! ☀️";
-    return "Good evening! Time to focus! 🌙";
-  }
-
-  /**
-   * DYNAMIC: Get study tips based on time of day
-   */
-  getDynamicStudyTips() {
-    const hour = new Date().getHours();
-    const currentPeriod = this.getDynamicAvailability();
-
-    const tips = {
-      morning: [
-        "🌅 Mornings are great for learning new concepts!",
-        "📚 Start your day with focused reading sessions",
-        "💡 Fresh mind = Better retention in the morning",
-      ],
-      afternoon: [
-        "☀️ Afternoons are perfect for group discussions!",
-        "👥 Ideal time for collaborative problem solving",
-        "📝 Great for practicing and applying knowledge",
-      ],
-      evening: [
-        "🌙 Evenings are best for review sessions!",
-        "🔄 Perfect time to recap what you learned",
-        "📖 Good for flashcards and memory reinforcement",
-      ],
-    };
-
-    return tips[currentPeriod] || ["Study smart, not just hard! 💪"];
-  }
-
-  /**
-   * DYNAMIC: Display study tip on page
-   */
-  displayStudyTip(tip) {
-    // Create or update study tip element
-    let tipElement = document.getElementById("studyTip");
-    if (!tipElement) {
-      tipElement = document.createElement("div");
-      tipElement.id = "studyTip";
-      tipElement.className = "study-tip";
-      tipElement.style.cssText = `
-                background: #e3f2fd;
-                border-left: 4px solid #4a90e2;
-                padding: 12px 16px;
-                margin: 20px 0;
-                border-radius: 4px;
-                font-size: 14px;
-                color: #2c3e50;
-            `;
-
-      // Insert after welcome description
-      const welcomeDesc = document.querySelector(".welcome-description");
-      if (welcomeDesc && welcomeDesc.parentNode) {
-        welcomeDesc.parentNode.insertBefore(
-          tipElement,
-          welcomeDesc.nextSibling
-        );
-      }
-    }
-
-    tipElement.innerHTML = `💡 <strong>Study Tip:</strong> ${tip}`;
-  }
-
-  /**
-   * DYNAMIC: Get current availability period
-   */
-  getDynamicAvailability() {
-    const hour = new Date().getHours();
-    if (hour >= 6 && hour < 12) return "morning";
-    if (hour >= 12 && hour < 18) return "afternoon";
-    return "evening";
-  }
-
-  /**
-   * DYNAMIC: Get study break activity from API
-   */
-  async getStudyBreakActivity() {
-    console.log("🎯 Getting study break...");
-
-    // MISSION D: Show loading for API call
-    this.showLoading('Finding a study break activity...');
-
-    try {
-      // Use the proven working API
-      const response = await fetch("https://api.adviceslip.com/advice");
-
-      if (response.ok) {
-        const data = await response.json();
-        alert(
-          `💡 Study Break Wisdom:\n\n"${data.slip.advice}"\n\nTake a moment to reflect! 🧠`
-        );
-      } else {
-        // Fallback if API has temporary issues
-        this.showFallbackStudyBreak();
-      }
-    } catch (error) {
-      console.log("API failed, using fallback");
-      this.showFallbackStudyBreak();
-    } finally {
-      // MISSION D: Hide loading
-      this.hideLoading();
-    }
-  }
-
-  // ==================== EXISTING FUNCTIONS (UPDATED) ====================
-
   safeAddEventListener(elementId, event, handler) {
     const element = document.getElementById(elementId);
     if (element) {
       element.addEventListener(event, handler);
-    }
-  }
-
-  openModal(modalId) {
-    this.closeModals();
-    const modal = document.getElementById(modalId);
-    if (modal) {
-      modal.classList.remove("hidden");
-      document.body.style.overflow = "hidden";
     }
   }
 
@@ -391,50 +346,7 @@ class AcademicOApp {
     document.body.style.overflow = "auto";
   }
 
-  async handleRegister(e) {
-    e.preventDefault();
-
-    // MISSION D: Show loading for registration
-    this.showLoading('Creating your account...');
-
-    const userData = {
-      name: document.getElementById("regFullName").value,
-      email: document.getElementById("regEmail").value,
-      course:
-        document.getElementById("courseInput").value || "Computer Science",
-      university: "University of Rwanda",
-      availability: this.getDynamicAvailability(), // DYNAMIC availability
-      studyType: document.getElementById("studyTypeSelect").value,
-      topic: document.getElementById("topicInput").value || "General",
-    };
-
-    // Validate passwords
-    const password = document.getElementById("regPassword").value;
-    const confirmPassword = document.getElementById("regConfirmPassword").value;
-
-    if (password !== confirmPassword) {
-      errorHandler.showUserError("Passwords do not match!");
-      this.hideLoading();
-      return;
-    }
-
-    try {
-      const userId = await authManager.registerUser(userData);
-      errorHandler.showSuccess(
-        "🎉 Welcome to AcademicO! You are now in our global network."
-      );
-      this.closeModals();
-      this.currentUser = { ...userData, id: userId };
-
-      // Refresh statistics to include new user
-      this.animateStatistics();
-    } catch (error) {
-      errorHandler.handleApiError(error, "registration");
-    } finally {
-      // MISSION D: Hide loading
-      this.hideLoading();
-    }
-  }
+  // ==================== EXISTING FUNCTIONALITY ====================
 
   async handleLogin(e) {
     e.preventDefault();
@@ -706,8 +618,8 @@ class AcademicOApp {
     return formats[studyType] || "Any Style";
   }
 
-  startChat(partnerId, partnerName) {
-    console.log(`💬 Starting chat with ${partnerName} (${partnerId})`);
+  startChat(userId, userName) {
+    console.log(`💬 Starting chat with ${userName} (${userId})`);
 
     // Safety check - wait for chatService to be ready
     if (typeof chatService === "undefined" || !chatService.isReady()) {
@@ -719,14 +631,14 @@ class AcademicOApp {
     }
 
     // Set up chat modal
-    document.getElementById("chatPartnerName").textContent = partnerName;
+    document.getElementById("chatPartnerName").textContent = userName;
 
     // Initialize chat with chat service
     const currentUser = this.currentUser || {
       id: "demo-user-" + Date.now(),
       name: "You",
     };
-    const partner = { id: partnerId, name: partnerName };
+    const partner = { id: userId, name: userName };
 
     chatService.startChat(currentUser, partner);
 
@@ -737,7 +649,7 @@ class AcademicOApp {
     this.openChatModal();
 
     errorHandler.showSuccess(
-      `Chat opened with ${partnerName}! Start typing...`
+      `Chat opened with ${userName}! Start typing...`
     );
   }
 
@@ -970,18 +882,6 @@ class AcademicOApp {
     }
   }
 
-  /**
-   * Enhanced safeAddEventListener to handle multiple elements with same ID
-   */
-  safeAddEventListener(elementId, event, handler) {
-    const element = document.getElementById(elementId);
-    if (element) {
-      // Remove existing listener to avoid duplicates
-      element.removeEventListener(event, handler);
-      element.addEventListener(event, handler);
-    }
-  }
-
   // ==================== DEMO CHAT FUNCTIONALITY ====================
 
   /**
@@ -1004,7 +904,8 @@ class AcademicOApp {
       {
         id: "demo-partner-1",
         name: "Alex Johnson",
-        university: "Computer Science Major",
+        university: "University of Rwanda",
+        country: "Rwanda",
         course: "Web Development",
         availability: "evening",
         studyType: "group",
@@ -1015,7 +916,8 @@ class AcademicOApp {
       {
         id: "demo-partner-2",
         name: "Sarah Chen",
-        university: "Mathematics Department",
+        university: "University of Nairobi",
+        country: "Kenya",
         course: "Data Structures",
         availability: "afternoon",
         studyType: "pair",
@@ -1036,8 +938,211 @@ class AcademicOApp {
         id: "demo-user-" + Date.now(),
         name: "Demo User",
         email: "demo@academico.com",
+        country: "Rwanda",
+        university: "University of Rwanda"
       };
       console.log("👤 Demo user created:", this.currentUser.id);
+    }
+  }
+
+  // ==================== DYNAMIC FEATURES ====================
+
+  /**
+   * DYNAMIC: Get live statistics from Firebase (not hardcoded)
+   */
+  async getLiveStatistics() {
+    try {
+      // If Firebase is available, get real data
+      if (typeof firebase !== "undefined" && firebase.firestore) {
+        const db = firebase.firestore();
+        const usersSnapshot = await db.collection("users").get();
+        const userCount = usersSnapshot.size;
+
+        // Calculate active courses
+        const courses = new Set();
+        usersSnapshot.forEach((doc) => {
+          const userData = doc.data();
+          if (userData.course) courses.add(userData.course);
+        });
+
+        return {
+          students: userCount,
+          groups: Math.max(1, Math.floor(userCount / 3)), // Dynamic calculation
+          courses: Math.max(1, courses.size),
+        };
+      }
+    } catch (error) {
+      console.log("Firebase not available, using dynamic fallback");
+    }
+
+    // Fallback: Still dynamic but based on time/random
+    const baseCount = Math.floor(Math.random() * 100) + 50; // Random but realistic
+    return {
+      students: baseCount,
+      groups: Math.max(1, Math.floor(baseCount / 4)),
+      courses: Math.max(1, Math.floor(baseCount / 10)),
+    };
+  }
+
+  /**
+   * DYNAMIC: Animate statistics counters with real data
+   */
+  async animateStatistics() {
+    const stats = await this.getLiveStatistics();
+
+    Object.keys(stats).forEach((stat, index) => {
+      const element = document.getElementById(stat + "Count");
+      if (element) {
+        this.animateCount(element, 0, stats[stat], 2000 + index * 500);
+      }
+    });
+  }
+
+  /**
+   * DYNAMIC: Animate number counting
+   */
+  animateCount(element, start, end, duration) {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      const value = Math.floor(progress * (end - start) + start);
+      element.textContent = value.toLocaleString();
+      if (progress < 1) {
+        window.requestAnimationFrame(step);
+      }
+    };
+    window.requestAnimationFrame(step);
+  }
+
+  /**
+   * DYNAMIC: Update content based on time of day
+   */
+  updateDynamicContent() {
+    // Dynamic greeting
+    const greeting = this.getDynamicGreeting();
+    const subtitleElement = document.querySelector(".welcome-subtitle");
+    if (subtitleElement) {
+      subtitleElement.textContent = greeting;
+    }
+
+    // Dynamic study tip
+    const tips = this.getDynamicStudyTips();
+    const randomTip = tips[Math.floor(Math.random() * tips.length)];
+
+    // Add study tip to page if tip element exists, or create it
+    this.displayStudyTip(randomTip);
+  }
+
+  /**
+   * DYNAMIC: Get greeting based on current time
+   */
+  getDynamicGreeting() {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning! Ready to study? 🌅";
+    if (hour < 18) return "Good afternoon! Let's learn! ☀️";
+    return "Good evening! Time to focus! 🌙";
+  }
+
+  /**
+   * DYNAMIC: Get study tips based on time of day
+   */
+  getDynamicStudyTips() {
+    const hour = new Date().getHours();
+    const currentPeriod = this.getDynamicAvailability();
+
+    const tips = {
+      morning: [
+        "🌅 Mornings are great for learning new concepts!",
+        "📚 Start your day with focused reading sessions",
+        "💡 Fresh mind = Better retention in the morning",
+      ],
+      afternoon: [
+        "☀️ Afternoons are perfect for group discussions!",
+        "👥 Ideal time for collaborative problem solving",
+        "📝 Great for practicing and applying knowledge",
+      ],
+      evening: [
+        "🌙 Evenings are best for review sessions!",
+        "🔄 Perfect time to recap what you learned",
+        "📖 Good for flashcards and memory reinforcement",
+      ],
+    };
+
+    return tips[currentPeriod] || ["Study smart, not just hard! 💪"];
+  }
+
+  /**
+   * DYNAMIC: Display study tip on page
+   */
+  displayStudyTip(tip) {
+    // Create or update study tip element
+    let tipElement = document.getElementById("studyTip");
+    if (!tipElement) {
+      tipElement = document.createElement("div");
+      tipElement.id = "studyTip";
+      tipElement.className = "study-tip";
+      tipElement.style.cssText = `
+                background: #e3f2fd;
+                border-left: 4px solid #4a90e2;
+                padding: 12px 16px;
+                margin: 20px 0;
+                border-radius: 4px;
+                font-size: 14px;
+                color: #2c3e50;
+            `;
+
+      // Insert after welcome description
+      const welcomeDesc = document.querySelector(".welcome-description");
+      if (welcomeDesc && welcomeDesc.parentNode) {
+        welcomeDesc.parentNode.insertBefore(
+          tipElement,
+          welcomeDesc.nextSibling
+        );
+      }
+    }
+
+    tipElement.innerHTML = `💡 <strong>Study Tip:</strong> ${tip}`;
+  }
+
+  /**
+   * DYNAMIC: Get current availability period
+   */
+  getDynamicAvailability() {
+    const hour = new Date().getHours();
+    if (hour >= 6 && hour < 12) return "morning";
+    if (hour >= 12 && hour < 18) return "afternoon";
+    return "evening";
+  }
+
+  /**
+   * DYNAMIC: Get study break activity from API
+   */
+  async getStudyBreakActivity() {
+    console.log("🎯 Getting study break...");
+
+    // MISSION D: Show loading for API call
+    this.showLoading('Finding a study break activity...');
+
+    try {
+      // Use the proven working API
+      const response = await fetch("https://api.adviceslip.com/advice");
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(
+          `💡 Study Break Wisdom:\n\n"${data.slip.advice}"\n\nTake a moment to reflect! 🧠`
+        );
+      } else {
+        // Fallback if API has temporary issues
+        this.showFallbackStudyBreak();
+      }
+    } catch (error) {
+      console.log("API failed, using fallback");
+      this.showFallbackStudyBreak();
+    } finally {
+      // MISSION D: Hide loading
+      this.hideLoading();
     }
   }
 
@@ -1050,7 +1155,7 @@ class AcademicOApp {
       "Look away from screen for 2 minutes"
     ];
     const activity = fallbackActivities[Math.floor(Math.random() * fallbackActivities.length)];
-    alert(`Study Break Suggestion:\n\n${activity}\n\nYour eyes and brain will thank you!`);
+    alert(`💡 Study Break Suggestion:\n\n${activity}\n\nYour eyes and brain will thank you! 🧠`);
   }
 }
 

@@ -90,7 +90,7 @@ const timezoneService = {
   getDetailedTimezone() {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const now = new Date();
-    const offset = -now.getTimezoneOffset() / 60; // Hours from UTC
+    const offset = -now.getTimezoneOffset() / 60;
 
     return {
       timezone,
