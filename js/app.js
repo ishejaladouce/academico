@@ -1,4 +1,4 @@
-// Complete AcademicO App - WITH DYNAMIC FEATURES
+// Complete AcademicO App - WITH MISSION D ENHANCEMENTS
 class AcademicOApp {
   constructor() {
     this.currentUser = null;
@@ -13,7 +13,8 @@ class AcademicOApp {
     this.setupDemoAutoResponder();
     this.addDemoChatPartners();
     this.setupDemoUser();
-    console.log("AcademicO Started with Dynamic Features!");
+    this.setupNetworkMonitoring(); // MISSION D: Network monitoring
+    console.log("AcademicO Started with Enhanced Error Handling!");
   }
 
   setupEventListeners() {
@@ -70,6 +71,98 @@ class AcademicOApp {
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") this.closeModals();
     });
+  }
+
+  // ==================== MISSION D: ENHANCED LOADING & ERROR HANDLING ====================
+
+  /**
+   * MISSION D: Show loading state
+   */
+  showLoading(message = "Loading...") {
+      this.hideLoading(); // Clear any existing loaders
+      
+      const loadingDiv = document.createElement('div');
+      loadingDiv.id = 'globalLoading';
+      loadingDiv.innerHTML = `
+          <div class="loading-overlay">
+              <div class="loading-spinner-large"></div>
+              <p>${message}</p>
+          </div>
+      `;
+      
+      loadingDiv.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.7);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 10000;
+          color: white;
+          font-size: 18px;
+      `;
+      
+      document.body.appendChild(loadingDiv);
+  }
+
+  /**
+   * MISSION D: Hide loading state
+   */
+  hideLoading() {
+      const existingLoader = document.getElementById('globalLoading');
+      if (existingLoader) {
+          existingLoader.remove();
+      }
+  }
+
+  /**
+   * MISSION D: Show inline loading for specific sections
+   */
+  showInlineLoading(containerId, message = "Loading...") {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      
+      // Save original content
+      if (!container.dataset.originalContent) {
+          container.dataset.originalContent = container.innerHTML;
+      }
+      
+      container.innerHTML = `
+          <div class="inline-loading">
+              <div class="loading-spinner"></div>
+              <p>${message}</p>
+          </div>
+      `;
+  }
+
+  /**
+   * MISSION D: Hide inline loading
+   */
+  hideInlineLoading(containerId) {
+      const container = document.getElementById(containerId);
+      if (!container || !container.dataset.originalContent) return;
+      
+      container.innerHTML = container.dataset.originalContent;
+      delete container.dataset.originalContent;
+  }
+
+  /**
+   * MISSION D: Enhanced error handling for network failures
+   */
+  setupNetworkMonitoring() {
+      // Monitor online/offline status
+      window.addEventListener('online', () => {
+          errorHandler.showSuccess('🌐 Connection restored!');
+          console.log('✅ App is back online');
+      });
+      
+      window.addEventListener('offline', () => {
+          errorHandler.showUserError('📡 You appear to be offline. Some features may not work.');
+          console.log('❌ App is offline');
+      });
   }
 
   // ==================== DYNAMIC FEATURES ====================
@@ -248,6 +341,9 @@ class AcademicOApp {
   async getStudyBreakActivity() {
     console.log("🎯 Getting study break...");
 
+    // MISSION D: Show loading for API call
+    this.showLoading('Finding a study break activity...');
+
     try {
       // Use the proven working API
       const response = await fetch("https://api.adviceslip.com/advice");
@@ -264,6 +360,9 @@ class AcademicOApp {
     } catch (error) {
       console.log("API failed, using fallback");
       this.showFallbackStudyBreak();
+    } finally {
+      // MISSION D: Hide loading
+      this.hideLoading();
     }
   }
 
@@ -295,6 +394,9 @@ class AcademicOApp {
   async handleRegister(e) {
     e.preventDefault();
 
+    // MISSION D: Show loading for registration
+    this.showLoading('Creating your account...');
+
     const userData = {
       name: document.getElementById("regFullName").value,
       email: document.getElementById("regEmail").value,
@@ -312,6 +414,7 @@ class AcademicOApp {
 
     if (password !== confirmPassword) {
       errorHandler.showUserError("Passwords do not match!");
+      this.hideLoading();
       return;
     }
 
@@ -327,29 +430,43 @@ class AcademicOApp {
       this.animateStatistics();
     } catch (error) {
       errorHandler.handleApiError(error, "registration");
+    } finally {
+      // MISSION D: Hide loading
+      this.hideLoading();
     }
   }
 
   async handleLogin(e) {
     e.preventDefault();
 
+    // MISSION D: Show loading for login
+    this.showLoading('Signing you in...');
+
     const email = document.getElementById("loginEmail").value;
     const password = document.getElementById("loginPassword").value;
 
     if (!email || !password) {
       errorHandler.showUserError("Please fill in all fields");
+      this.hideLoading();
       return;
     }
 
-    // For demo - in real app, verify with Firebase Auth
-    this.currentUser = {
-      email: email,
-      name: email.split("@")[0],
-      id: "user-" + Date.now(),
-    };
+    try {
+      // For demo - in real app, verify with Firebase Auth
+      this.currentUser = {
+        email: email,
+        name: email.split("@")[0],
+        id: "user-" + Date.now(),
+      };
 
-    errorHandler.showSuccess(`👋 Welcome back, ${this.currentUser.name}!`);
-    this.closeModals();
+      errorHandler.showSuccess(`👋 Welcome back, ${this.currentUser.name}!`);
+      this.closeModals();
+    } catch (error) {
+      errorHandler.handleApiError(error, "login");
+    } finally {
+      // MISSION D: Hide loading
+      this.hideLoading();
+    }
   }
 
   async handleSearch(e) {
@@ -368,8 +485,8 @@ class AcademicOApp {
       return;
     }
 
-    // Show loading
-    document.getElementById("loadingSection").classList.remove("hidden");
+    // MISSION D: Enhanced loading with specific message
+    this.showLoading('Searching for study partners worldwide...');
 
     try {
       // Get user's timezone for dynamic matching
@@ -384,7 +501,8 @@ class AcademicOApp {
     } catch (error) {
       errorHandler.handleApiError(error, "search");
     } finally {
-      document.getElementById("loadingSection").classList.add("hidden");
+      // MISSION D: Hide loading
+      this.hideLoading();
     }
   }
 
@@ -448,6 +566,31 @@ class AcademicOApp {
   }
 
   /**
+   * MISSION C: Calculate timezone compatibility
+   */
+  calculateTimezoneCompatibility(partner) {
+    // Get current user's timezone info
+    const userOffset = -new Date().getTimezoneOffset() / 60;
+    
+    // Generate realistic partner timezone (for demo)
+    const offsets = [0, 1, 2, 3, -5, -8, 5, 7, -3, -1];
+    const partnerOffset = offsets[Math.floor(Math.random() * offsets.length)];
+    
+    const diff = Math.abs(userOffset - partnerOffset);
+    
+    // Calculate compatibility
+    if (diff <= 2) {
+        return { score: 95, level: 'excellent', label: 'Same Region' };
+    } else if (diff <= 4) {
+        return { score: 80, level: 'good', label: 'Nearby' };
+    } else if (diff <= 6) {
+        return { score: 65, level: 'fair', label: 'Moderate' };
+    } else {
+        return { score: 50, level: 'challenging', label: 'Distant' };
+    }
+  }
+
+  /**
    * DYNAMIC: Get random "last active" time
    */
   getRandomTime() {
@@ -467,31 +610,6 @@ class AcademicOApp {
       "Responds within 30m",
     ];
     return times[Math.floor(Math.random() * times.length)];
-  }
-
-  /**
-   * MISSION C: Calculate timezone compatibility
-   */
-  calculateTimezoneCompatibility(partner) {
-    // Get current user's timezone info
-    const userOffset = -new Date().getTimezoneOffset() / 60;
-
-    // Generate realistic partner timezone (for demo)
-    const offsets = [0, 1, 2, 3, -5, -8, 5, 7, -3, -1];
-    const partnerOffset = offsets[Math.floor(Math.random() * offsets.length)];
-
-    const diff = Math.abs(userOffset - partnerOffset);
-
-    // Calculate compatibility
-    if (diff <= 2) {
-      return { score: 95, level: "excellent", label: "Same Region" };
-    } else if (diff <= 4) {
-      return { score: 80, level: "good", label: "Nearby" };
-    } else if (diff <= 6) {
-      return { score: 65, level: "fair", label: "Moderate" };
-    } else {
-      return { score: 50, level: "challenging", label: "Distant" };
-    }
   }
 
   /**
@@ -519,74 +637,50 @@ class AcademicOApp {
             `;
     } else {
       container.innerHTML = partners
-        .map((partner) => {
-          // Calculate timezone compatibility
-          const tzCompatibility = this.calculateTimezoneCompatibility(partner);
-          const badgeClass = `tz-badge ${tzCompatibility.level}`;
-
-          return `
+        .map(
+          (partner) => {
+            // Calculate timezone compatibility
+            const tzCompatibility = this.calculateTimezoneCompatibility(partner);
+            const badgeClass = `tz-badge ${tzCompatibility.level}`;
+            
+            return `
                 <div class="partner-card">
                     <div class="partner-header">
-                        <div class="partner-avatar ${
-                          partner.isOnline ? "online" : "offline"
-                        }">
+                        <div class="partner-avatar ${partner.isOnline ? "online" : "offline"}">
                             ${partner.name.charAt(0)}
                         </div>
                         <div class="partner-info">
-                            <h3>${partner.name} ${
-            partner.isOnline ? "🟢" : "⚫"
-          }</h3>
-                            <span class="partner-university">${
-                              partner.university || "Student"
-                            }</span>
-                            <span class="partner-course">${partner.course} • ${
-            partner.matchScore
-          }% match</span>
+                            <h3>${partner.name} ${partner.isOnline ? "🟢" : "⚫"}</h3>
+                            <span class="partner-university">${partner.university || "Student"}</span>
+                            <span class="partner-course">${partner.course} • ${partner.matchScore}% match</span>
                         </div>
                     </div>
                     
                     <!-- NEW: Timezone Compatibility Badge -->
                     <div class="${badgeClass}">
-                        🌍 ${tzCompatibility.label} • ${
-            tzCompatibility.score
-          }% time match
+                        🌍 ${tzCompatibility.label} • ${tzCompatibility.score}% time match
                     </div>
                     
                     <div class="partner-details">
-                        <div class="detail-item">📚 <strong>Topic:</strong> ${
-                          partner.topic
-                        }</div>
-                        <div class="detail-item">⏰ <strong>Available:</strong> ${this.formatAvailability(
-                          partner.availability
-                        )}</div>
-                        <div class="detail-item">🕐 <strong>Local Time:</strong> ${
-                          partner.localTime
-                        }</div>
-                        <div class="detail-item">👥 <strong>Study Style:</strong> ${this.formatStudyType(
-                          partner.studyType
-                        )}</div>
-                        <div class="detail-item">💬 <strong>${
-                          partner.responseTime
-                        }</strong></div>
-                        <div class="last-active">Last active: ${
-                          partner.lastActive
-                        }</div>
+                        <div class="detail-item">📚 <strong>Topic:</strong> ${partner.topic}</div>
+                        <div class="detail-item">⏰ <strong>Available:</strong> ${this.formatAvailability(partner.availability)}</div>
+                        <div class="detail-item">🕐 <strong>Local Time:</strong> ${partner.localTime}</div>
+                        <div class="detail-item">👥 <strong>Study Style:</strong> ${this.formatStudyType(partner.studyType)}</div>
+                        <div class="detail-item">💬 <strong>${partner.responseTime}</strong></div>
+                        <div class="last-active">Last active: ${partner.lastActive}</div>
                     </div>
                     <div class="partner-actions">
-                        <button class="action-btn chat-btn" onclick="app.startChat('${
-                          partner.id
-                        }', '${partner.name}')">
+                        <button class="action-btn chat-btn" onclick="app.startChat('${partner.id}', '${partner.name}')">
                             💬 Message
                         </button>
-                        <button class="action-btn connect-btn" onclick="app.connectPartner('${
-                          partner.id
-                        }')">
+                        <button class="action-btn connect-btn" onclick="app.connectPartner('${partner.id}')">
                             👥 Connect
                         </button>
                     </div>
                 </div>
             `;
-        })
+          }
+        )
         .join("");
     }
 
@@ -612,8 +706,8 @@ class AcademicOApp {
     return formats[studyType] || "Any Style";
   }
 
-  startChat(userId, userName) {
-    console.log(`💬 Starting chat with ${userName} (${userId})`);
+  startChat(partnerId, partnerName) {
+    console.log(`💬 Starting chat with ${partnerName} (${partnerId})`);
 
     // Safety check - wait for chatService to be ready
     if (typeof chatService === "undefined" || !chatService.isReady()) {
@@ -625,14 +719,14 @@ class AcademicOApp {
     }
 
     // Set up chat modal
-    document.getElementById("chatPartnerName").textContent = userName;
+    document.getElementById("chatPartnerName").textContent = partnerName;
 
     // Initialize chat with chat service
     const currentUser = this.currentUser || {
       id: "demo-user-" + Date.now(),
       name: "You",
     };
-    const partner = { id: userId, name: userName };
+    const partner = { id: partnerId, name: partnerName };
 
     chatService.startChat(currentUser, partner);
 
@@ -642,7 +736,9 @@ class AcademicOApp {
     // Open chat modal
     this.openChatModal();
 
-    errorHandler.showSuccess(`Chat opened with ${userName}! Start typing...`);
+    errorHandler.showSuccess(
+      `Chat opened with ${partnerName}! Start typing...`
+    );
   }
 
   connectPartner(userId) {
@@ -943,6 +1039,18 @@ class AcademicOApp {
       };
       console.log("👤 Demo user created:", this.currentUser.id);
     }
+  }
+
+  // MISSION D: Fallback for study break
+  showFallbackStudyBreak() {
+    const fallbackActivities = [
+      "Take a 5-minute walk and stretch",
+      "Do 10 deep breathing exercises",
+      "Get a glass of water and hydrate",
+      "Look away from screen for 2 minutes"
+    ];
+    const activity = fallbackActivities[Math.floor(Math.random() * fallbackActivities.length)];
+    alert(`Study Break Suggestion:\n\n${activity}\n\nYour eyes and brain will thank you!`);
   }
 }
 

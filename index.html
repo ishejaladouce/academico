@@ -8,6 +8,7 @@
       name="description"
       content="Connect with students in your courses for collaborative learning and academic success"
     />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
@@ -24,7 +25,9 @@
           <a href="#features" class="nav-link">Features</a>
           <a href="#how-it-works" class="nav-link">How It Works</a>
           <a href="#search" class="nav-link">Find Partners</a>
-          <button class="login-btn" id="loginBtn">Login</button>
+          <button class="login-btn" id="loginBtn">
+            <i class="fas fa-sign-in-alt"></i> Login
+          </button>
         </nav>
       </div>
     </header>
@@ -52,36 +55,41 @@
               <div class="stats-container">
                 <div class="stat">
                   <span class="stat-number" id="studentsCount">0</span>
-                  <span class="stat-label">Students Connected</span>
+                  <span class="stat-label">
+                    <i class="fas fa-users"></i> Students Connected
+                  </span>
                 </div>
                 <div class="stat">
                   <span class="stat-number" id="studyGroupsCount">0</span>
-                  <span class="stat-label">Active Study Groups</span>
+                  <span class="stat-label">
+                    <i class="fas fa-user-friends"></i> Active Study Groups
+                  </span>
                 </div>
                 <div class="stat">
                   <span class="stat-number" id="coursesCount">0</span>
-                  <span class="stat-label">Courses Available</span>
+                  <span class="stat-label">
+                    <i class="fas fa-book"></i> Courses Available
+                  </span>
                 </div>
               </div>
 
               <!-- Authentication Buttons -->
               <div class="auth-buttons">
                 <button class="auth-btn primary" id="loginBtnMain">
-                  Login to Continue
+                  <i class="fas fa-sign-in-alt"></i> Login to Continue
                 </button>
                 <button class="auth-btn secondary" id="registerBtnMain">
-                  New Here? Register
+                  <i class="fas fa-user-plus"></i> New Here? Register
                 </button>
               </div>
 
-              <!-- STUDY BREAK BUTTON - ADD THIS RIGHT AFTER AUTH-BUTTONS -->
+              <!-- STUDY BREAK BUTTON -->
               <button class="study-break-btn" id="studyBreakBtn">
-                🎯 Need a Study Break?
+                <i class="fas fa-brain"></i> Need a Study Break?
               </button>
             </div>
 
             <div class="welcome-visual">
-              <!-- Your SVG stays here -->
               <img
                 src="assets/images/road.svg"
                 alt="Students collaborating on studies"
@@ -90,7 +98,9 @@
               />
               <!-- Fallback text if SVG doesn't load -->
               <div class="vector-fallback" style="display: none">
-                <div style="font-size: 48px; margin-bottom: 20px">👨‍🎓👩‍🎓</div>
+                <div style="font-size: 48px; margin-bottom: 20px">
+                  <i class="fas fa-user-graduate"></i><i class="fas fa-user-graduate"></i>
+                </div>
                 <p>Students Collaborating</p>
               </div>
             </div>
@@ -104,7 +114,7 @@
           <h2 class="section-title">Why Choose AcademicO?</h2>
           <div class="features-grid">
             <div class="feature-card">
-              <div class="feature-icon">🎯</div>
+              <div class="feature-icon"><i class="fas fa-bullseye"></i></div>
               <h3>Smart Matching</h3>
               <p>
                 Find partners based on your course, schedule, and learning style
@@ -112,7 +122,7 @@
               </p>
             </div>
             <div class="feature-card">
-              <div class="feature-icon">⏰</div>
+              <div class="feature-icon"><i class="fas fa-clock"></i></div>
               <h3>Time Zone Aware</h3>
               <p>
                 Connect with students who share your availability across
@@ -120,7 +130,7 @@
               </p>
             </div>
             <div class="feature-card">
-              <div class="feature-icon">📚</div>
+              <div class="feature-icon"><i class="fas fa-book"></i></div>
               <h3>Resource Sharing</h3>
               <p>
                 Share study materials, notes, and resources securely with your
@@ -128,7 +138,7 @@
               </p>
             </div>
             <div class="feature-card">
-              <div class="feature-icon">👥</div>
+              <div class="feature-icon"><i class="fas fa-users"></i></div>
               <h3>Collaborative Learning</h3>
               <p>
                 Learn better together with peer support, group discussions, and
@@ -146,7 +156,7 @@
           <div class="steps-container">
             <div class="step">
               <div class="step-number">1</div>
-              <div class="step-icon">📝</div>
+              <div class="step-icon"><i class="fas fa-edit"></i></div>
               <h3>Create Your Profile</h3>
               <p>
                 Tell us about your courses, availability, and preferred study
@@ -155,7 +165,7 @@
             </div>
             <div class="step">
               <div class="step-number">2</div>
-              <div class="step-icon">🔍</div>
+              <div class="step-icon"><i class="fas fa-search"></i></div>
               <h3>Find Your Match</h3>
               <p>
                 Discover students with similar academic goals and compatible
@@ -164,7 +174,7 @@
             </div>
             <div class="step">
               <div class="step-number">3</div>
-              <div class="step-icon">💬</div>
+              <div class="step-icon"><i class="fas fa-comments"></i></div>
               <h3>Connect & Study</h3>
               <p>
                 Start collaborating, share resources, and achieve academic
@@ -188,7 +198,7 @@
               <div class="form-row">
                 <div class="form-group">
                   <label for="courseInput" class="form-label">
-                    📚 Course
+                    <i class="fas fa-book"></i> Course
                   </label>
                   <input
                     type="text"
@@ -199,7 +209,9 @@
                 </div>
 
                 <div class="form-group">
-                  <label for="topicInput" class="form-label"> 🎯 Topic </label>
+                  <label for="topicInput" class="form-label"> 
+                    <i class="fas fa-bullseye"></i> Topic 
+                  </label>
                   <input
                     type="text"
                     id="topicInput"
@@ -211,7 +223,7 @@
               <div class="form-row">
                 <div class="form-group">
                   <label for="availabilitySelect" class="form-label">
-                    ⏰ Availability
+                    <i class="fas fa-clock"></i> Availability
                   </label>
                   <select id="availabilitySelect">
                     <option value="">Any time</option>
@@ -224,7 +236,7 @@
 
                 <div class="form-group">
                   <label for="studyTypeSelect" class="form-label">
-                    👥 Study Style
+                    <i class="fas fa-users"></i> Study Style
                   </label>
                   <select id="studyTypeSelect">
                     <option value="">Any style</option>
@@ -236,7 +248,7 @@
               </div>
 
               <button type="submit" class="search-button">
-                🔍 Search Study Partners
+                <i class="fas fa-search"></i> Search Study Partners
               </button>
             </form>
           </div>
@@ -264,7 +276,9 @@
               </div>
 
               <div class="filter-controls">
-                <button class="filter-btn" id="filterToggle">🔧 Filters</button>
+                <button class="filter-btn" id="filterToggle">
+                  <i class="fas fa-sliders-h"></i> Filters
+                </button>
               </div>
             </div>
           </div>
@@ -272,7 +286,7 @@
           <!-- Filter Panel -->
           <div class="filter-panel hidden" id="filterPanel">
             <div class="filter-group">
-              <h4>Study Type</h4>
+              <h4><i class="fas fa-users"></i> Study Type</h4>
               <div class="filter-options">
                 <label
                   ><input
@@ -305,7 +319,7 @@
             </div>
 
             <div class="filter-group">
-              <h4>Availability</h4>
+              <h4><i class="fas fa-clock"></i> Availability</h4>
               <div class="filter-options">
                 <label
                   ><input
@@ -347,7 +361,7 @@
             </div>
 
             <button class="apply-filters-btn" id="applyFilters">
-              Apply Filters
+              <i class="fas fa-check"></i> Apply Filters
             </button>
           </div>
 
@@ -368,7 +382,7 @@
       <div class="container">
         <p>&copy; 2024 AcademicO - Academic Connection Platform</p>
         <p class="credits">
-          Built for better learning experiences • Empowering students worldwide
+          <i class="fas fa-graduation-cap"></i> Built for better learning experiences • Empowering students worldwide
         </p>
       </div>
     </footer>
@@ -377,12 +391,14 @@
     <div class="modal hidden" id="chatModal">
       <div class="modal-overlay" id="chatOverlay"></div>
       <div class="modal-content chat-modal">
-        <button class="modal-close" id="closeChat">&times;</button>
+        <button class="modal-close" id="closeChat">
+          <i class="fas fa-times"></i>
+        </button>
 
         <div class="chat-header">
           <h3>Chat with <span id="chatPartnerName">Partner</span></h3>
           <button class="video-call-btn" id="startVideoCall">
-            📹 Start Video Call
+            <i class="fas fa-video"></i> Start Video Call
           </button>
         </div>
 
@@ -396,7 +412,9 @@
             id="messageInput"
             placeholder="Type your message..."
           />
-          <button id="sendMessageBtn">Send</button>
+          <button id="sendMessageBtn">
+            <i class="fas fa-paper-plane"></i> Send
+          </button>
         </div>
       </div>
     </div>
@@ -405,15 +423,19 @@
     <div class="modal hidden" id="loginModal">
       <div class="modal-overlay" id="loginOverlay"></div>
       <div class="modal-content">
-        <button class="modal-close" id="closeLogin">&times;</button>
+        <button class="modal-close" id="closeLogin">
+          <i class="fas fa-times"></i>
+        </button>
         <div class="auth-card">
           <div class="auth-header">
-            <h2>Welcome Back! 👋</h2>
+            <h2>Welcome Back! <i class="fas fa-hand-wave"></i></h2>
             <p>Login to your AcademicO account</p>
           </div>
           <form class="auth-form" id="loginForm">
             <div class="form-group">
-              <label for="loginEmail">Email Address</label>
+              <label for="loginEmail">
+                <i class="fas fa-envelope"></i> Email Address
+              </label>
               <input
                 type="email"
                 id="loginEmail"
@@ -422,7 +444,9 @@
               />
             </div>
             <div class="form-group">
-              <label for="loginPassword">Password</label>
+              <label for="loginPassword">
+                <i class="fas fa-lock"></i> Password
+              </label>
               <input
                 type="password"
                 id="loginPassword"
@@ -431,14 +455,16 @@
               />
             </div>
             <button type="submit" class="auth-submit-btn">
-              🔐 Login to AcademicO
+              <i class="fas fa-sign-in-alt"></i> Login to AcademicO
             </button>
             <div class="auth-links">
-              <a href="#" class="auth-link">Forgot password?</a>
+              <a href="#" class="auth-link">
+                <i class="fas fa-key"></i> Forgot password?
+              </a>
               <span>•</span>
-              <a href="#" class="auth-link" id="showRegisterModal"
-                >Create new account</a
-              >
+              <a href="#" class="auth-link" id="showRegisterModal">
+                <i class="fas fa-user-plus"></i> Create new account
+              </a>
             </div>
           </form>
         </div>
@@ -449,15 +475,19 @@
     <div class="modal hidden" id="registerModal">
       <div class="modal-overlay" id="registerOverlay"></div>
       <div class="modal-content">
-        <button class="modal-close" id="closeRegister">&times;</button>
+        <button class="modal-close" id="closeRegister">
+          <i class="fas fa-times"></i>
+        </button>
         <div class="auth-card">
           <div class="auth-header">
-            <h2>Join AcademicO! 🎓</h2>
+            <h2>Join AcademicO! <i class="fas fa-graduation-cap"></i></h2>
             <p>Create your account and start studying smarter</p>
           </div>
           <form class="auth-form" id="registerForm">
             <div class="form-group">
-              <label for="regFullName">Full Name</label>
+              <label for="regFullName">
+                <i class="fas fa-user"></i> Full Name
+              </label>
               <input
                 type="text"
                 id="regFullName"
@@ -466,7 +496,9 @@
               />
             </div>
             <div class="form-group">
-              <label for="regEmail">University Email</label>
+              <label for="regEmail">
+                <i class="fas fa-envelope"></i> University Email
+              </label>
               <input
                 type="email"
                 id="regEmail"
@@ -475,7 +507,9 @@
               />
             </div>
             <div class="form-group">
-              <label for="regPassword">Create Password</label>
+              <label for="regPassword">
+                <i class="fas fa-lock"></i> Create Password
+              </label>
               <input
                 type="password"
                 id="regPassword"
@@ -484,7 +518,9 @@
               />
             </div>
             <div class="form-group">
-              <label for="regConfirmPassword">Confirm Password</label>
+              <label for="regConfirmPassword">
+                <i class="fas fa-lock"></i> Confirm Password
+              </label>
               <input
                 type="password"
                 id="regConfirmPassword"
@@ -493,12 +529,12 @@
               />
             </div>
             <button type="submit" class="auth-submit-btn">
-              🚀 Create Account
+              <i class="fas fa-rocket"></i> Create Account
             </button>
             <div class="auth-links">
-              <a href="#" class="auth-link" id="showLoginModal"
-                >Already have an account? Login</a
-              >
+              <a href="#" class="auth-link" id="showLoginModal">
+                <i class="fas fa-sign-in-alt"></i> Already have an account? Login
+              </a>
             </div>
           </form>
         </div>
