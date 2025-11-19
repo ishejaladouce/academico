@@ -154,13 +154,12 @@ class AcademicOApp {
     try {
       const userId = await authManager.registerUser(userData);
       errorHandler.showSuccess(
-        "Welcome to AcademicO! Account created successfully."
+        "Welcome to AcademicO! Your account has been created successfully. Please login to continue."
       );
       this.closeModals();
 
-      setTimeout(() => {
-        window.location.href = "dashboard.html";
-      }, 1500);
+      // Clear the registration form
+      document.getElementById("registerForm").reset();
     } catch (error) {
       errorHandler.handleApiError(error, "registration");
     } finally {
