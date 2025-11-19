@@ -17,3 +17,9 @@ Thumbs.db
 # BACKUP FILES
 *.bak
 *.tmp
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -14,10 +14,10 @@ class AcademicOApp {
     this.addDemoChatPartners();
     this.setupDemoUser();
     this.setupNetworkMonitoring();
-    
+
     // Load countries when app starts
     this.loadCountriesOnStart();
-    
+
     console.log("AcademicO Started with Dynamic Countries & Universities!");
   }
 
@@ -28,11 +28,14 @@ class AcademicOApp {
    */
   async loadCountriesOnStart() {
     try {
-      console.log('🌍 Loading countries on startup...');
+      console.log("Loading countries on startup...");
       await countriesService.loadCountries();
-      console.log('✅ Countries loaded successfully');
+      console.log("Countries loaded successfully");
+
+      // POPULATE SEARCH FILTERS TOO
+      countriesService.populateCountryDropdown("countryFilter");
     } catch (error) {
-      console.log('❌ Failed to load countries on startup:', error);
+      console.log("Failed to load countries on startup:", error);
     }
   }
 
@@ -41,13 +44,13 @@ class AcademicOApp {
    */
   setupCountryUniversityEvents() {
     // Country change event
-    this.safeAddEventListener('regCountry', 'change', (e) => {
+    this.safeAddEventListener("regCountry", "change", (e) => {
       this.handleCountryChange(e.target.value);
     });
 
     // University change event for "Other" option
-    this.safeAddEventListener('regUniversity', 'change', (e) => {
-      universitiesService.handleUniversityChange('regUniversity');
+    this.safeAddEventListener("regUniversity", "change", (e) => {
+      universitiesService.handleUniversityChange("regUniversity");
     });
   }
 
@@ -56,43 +59,150 @@ class AcademicOApp {
    */
   async handleCountryChange(countryCode) {
     if (!countryCode) return;
-    
-    console.log(`🌍 Country changed to: ${countryCode}`);
-    
+
+    console.log(`Country changed to: ${countryCode}`);
+
     // Show loading for universities
-    this.showInlineLoading('regUniversity', 'Loading universities...');
-    
+    this.showInlineLoading("regUniversity", "Loading universities...");
+
     try {
       // Load universities for the selected country
-      const universitiesData = await universitiesService.loadUniversities(countryCode);
-      
+      const universitiesData = await universitiesService.loadUniversities(
+        countryCode
+      );
+
       // Populate university dropdown
-      universitiesService.populateUniversityDropdown('regUniversity', universitiesData.universities);
-      
-      console.log(`✅ Loaded ${universitiesData.universities.length} universities for ${countriesService.getCountryName(countryCode)}`);
+      universitiesService.populateUniversityDropdown(
+        "regUniversity",
+        universitiesData.universities
+      );
+
+      console.log(
+        `Loaded ${
+          universitiesData.universities.length
+        } universities for ${countriesService.getCountryName(countryCode)}`
+      );
     } catch (error) {
-      console.log('❌ Failed to load universities:', error);
-      errorHandler.showUserError('Failed to load universities. Please try again.');
+      console.log("Failed to load universities:", error);
+      errorHandler.showUserError(
+        "Failed to load universities. Please try again."
+      );
     }
+  }
+
+  /**
+   * Handle country change in search - load universities for filter
+   */
+  async handleSearchCountryChange(countryCode) {
+    if (!countryCode) {
+      // Clear universities if no country selected
+      const universityFilter = document.getElementById("universityFilter");
+      const searchCustomContainer = document.getElementById(
+        "searchCustomUniversityContainer"
+      );
+      if (universityFilter) {
+        universityFilter.innerHTML =
+          '<option value="">All Universities</option>';
+      }
+      if (searchCustomContainer) {
+        searchCustomContainer.classList.add("hidden");
+      }
+      return;
+    }
+
+    try {
+      const universitiesData = await universitiesService.loadUniversities(
+        countryCode
+      );
+      this.populateSearchUniversityFilter(universitiesData.universities);
+    } catch (error) {
+      console.log("Failed to load universities for search filter:", error);
+    }
+  }
+
+  /**
+   * Populate university filter in search section
+   */
+  populateSearchUniversityFilter(universities) {
+    const universityFilter = document.getElementById("universityFilter");
+    if (!universityFilter) return;
+
+    // Clear existing options
+    universityFilter.innerHTML = '<option value="">All Universities</option>';
+
+    // Add universities to filter
+    universities.forEach((uni) => {
+      const option = document.createElement("option");
+      option.value = uni.name;
+      option.textContent = uni.name;
+      universityFilter.appendChild(option);
+    });
+
+    // Add "Other" option at the end
+    const otherOption = document.createElement("option");
+    otherOption.value = "other";
+    otherOption.textContent = "Other (University not listed)";
+    universityFilter.appendChild(otherOption);
+
+    console.log(
+      `Populated ${universities.length} universities + "Other" option in search filter`
+    );
+  }
+
+  /**
+   * Handle university change in search - show/hide custom input
+   */
+  handleSearchUniversityChange(selectedValue) {
+    const searchCustomContainer = document.getElementById(
+      "searchCustomUniversityContainer"
+    );
+    const searchCustomInput = document.getElementById("searchCustomUniversity");
+
+    if (!searchCustomContainer || !searchCustomInput) return;
+
+    if (selectedValue === "other") {
+      searchCustomContainer.classList.remove("hidden");
+      searchCustomInput.required = true;
+    } else {
+      searchCustomContainer.classList.add("hidden");
+      searchCustomInput.required = false;
+      searchCustomInput.value = "";
+    }
+  }
+
+  /**
+   * Get university value for search (handles "Other" option)
+   */
+  getSearchUniversityValue() {
+    const universityFilter = document.getElementById("universityFilter");
+    const searchCustomInput = document.getElementById("searchCustomUniversity");
+
+    if (!universityFilter) return "";
+
+    if (universityFilter.value === "other" && searchCustomInput) {
+      return searchCustomInput.value.trim();
+    }
+
+    return universityFilter.value;
   }
 
   /**
    * Populate country dropdown when register modal opens
    */
   populateCountryDropdown() {
-    const countrySelect = document.getElementById('regCountry');
+    const countrySelect = document.getElementById("regCountry");
     if (!countrySelect) {
-      console.log('❌ Country select element not found');
+      console.log("Country select element not found");
       return;
     }
 
     // Clear loading message
     countrySelect.innerHTML = '<option value="">Select your country</option>';
-    
+
     // Populate with countries
-    countriesService.populateCountryDropdown('regCountry');
-    
-    console.log('✅ Country dropdown populated');
+    countriesService.populateCountryDropdown("regCountry");
+
+    console.log("Country dropdown populated");
   }
 
   // ==================== MODAL MANAGEMENT ====================
@@ -121,12 +231,15 @@ class AcademicOApp {
     e.preventDefault();
 
     // Show loading for registration
-    this.showLoading('Creating your account...');
+    this.showLoading("Creating your account...");
 
     // Get country and university values
-    const countrySelect = document.getElementById('regCountry');
-    const universityValue = universitiesService.getUniversityValue('regUniversity', 'customUniversity');
-    
+    const countrySelect = document.getElementById("regCountry");
+    const universityValue = universitiesService.getUniversityValue(
+      "regUniversity",
+      "customUniversity"
+    );
+
     if (!countrySelect.value) {
       errorHandler.showUserError("Please select your country");
       this.hideLoading();
@@ -165,7 +278,7 @@ class AcademicOApp {
     try {
       const userId = await authManager.registerUser(userData);
       errorHandler.showSuccess(
-        "🎉 Welcome to AcademicO! You are now in our global network."
+        "Welcome to AcademicO! You are now in our global network."
       );
       this.closeModals();
       this.currentUser = { ...userData, id: userId };
@@ -187,16 +300,16 @@ class AcademicOApp {
    */
   showLoading(message = "Loading...") {
     this.hideLoading();
-    
-    const loadingDiv = document.createElement('div');
-    loadingDiv.id = 'globalLoading';
+
+    const loadingDiv = document.createElement("div");
+    loadingDiv.id = "globalLoading";
     loadingDiv.innerHTML = `
         <div class="loading-overlay">
             <div class="loading-spinner-large"></div>
             <p>${message}</p>
         </div>
     `;
-    
+
     loadingDiv.style.cssText = `
         position: fixed;
         top: 0;
@@ -211,7 +324,7 @@ class AcademicOApp {
         color: white;
         font-size: 18px;
     `;
-    
+
     document.body.appendChild(loadingDiv);
   }
 
@@ -219,7 +332,7 @@ class AcademicOApp {
    * Hide loading state
    */
   hideLoading() {
-    const existingLoader = document.getElementById('globalLoading');
+    const existingLoader = document.getElementById("globalLoading");
     if (existingLoader) {
       existingLoader.remove();
     }
@@ -231,12 +344,12 @@ class AcademicOApp {
   showInlineLoading(containerId, message = "Loading...") {
     const container = document.getElementById(containerId);
     if (!container) return;
-    
+
     // Save original content
     if (!container.dataset.originalContent) {
       container.dataset.originalContent = container.innerHTML;
     }
-    
+
     container.innerHTML = `
         <div class="inline-loading">
             <div class="loading-spinner-small"></div>
@@ -251,7 +364,7 @@ class AcademicOApp {
   hideInlineLoading(containerId) {
     const container = document.getElementById(containerId);
     if (!container || !container.dataset.originalContent) return;
-    
+
     container.innerHTML = container.dataset.originalContent;
     delete container.dataset.originalContent;
   }
@@ -260,12 +373,14 @@ class AcademicOApp {
    * Enhanced error handling for network failures
    */
   setupNetworkMonitoring() {
-    window.addEventListener('online', () => {
-      errorHandler.showSuccess('🌐 Connection restored!');
+    window.addEventListener("online", () => {
+      errorHandler.showSuccess("Connection restored!");
     });
-    
-    window.addEventListener('offline', () => {
-      errorHandler.showUserError('📡 You appear to be offline. Some features may not work.');
+
+    window.addEventListener("offline", () => {
+      errorHandler.showUserError(
+        "You appear to be offline. Some features may not work."
+      );
     });
   }
 
@@ -284,8 +399,18 @@ class AcademicOApp {
     );
 
     // ADDED: University change event for "Other" option
-    this.safeAddEventListener('regUniversity', 'change', (e) => {
-      universitiesService.handleUniversityChange('regUniversity');
+    this.safeAddEventListener("regUniversity", "change", (e) => {
+      universitiesService.handleUniversityChange("regUniversity");
+    });
+
+    // ADDED: Search country filter change
+    this.safeAddEventListener("countryFilter", "change", (e) => {
+      this.handleSearchCountryChange(e.target.value);
+    });
+
+    // ADDED: Search university filter change for "Other" option
+    this.safeAddEventListener("universityFilter", "change", (e) => {
+      this.handleSearchUniversityChange(e.target.value);
     });
 
     // Modal open buttons
@@ -352,7 +477,7 @@ class AcademicOApp {
     e.preventDefault();
 
     // MISSION D: Show loading for login
-    this.showLoading('Signing you in...');
+    this.showLoading("Signing you in...");
 
     const email = document.getElementById("loginEmail").value;
     const password = document.getElementById("loginPassword").value;
@@ -371,7 +496,7 @@ class AcademicOApp {
         id: "user-" + Date.now(),
       };
 
-      errorHandler.showSuccess(`👋 Welcome back, ${this.currentUser.name}!`);
+      errorHandler.showSuccess(`Welcome back, ${this.currentUser.name}!`);
       this.closeModals();
     } catch (error) {
       errorHandler.handleApiError(error, "login");
@@ -389,6 +514,8 @@ class AcademicOApp {
       availability: document.getElementById("availabilitySelect").value,
       studyType: document.getElementById("studyTypeSelect").value,
       topic: document.getElementById("topicInput").value,
+      country: document.getElementById("countryFilter").value,
+      university: this.getSearchUniversityValue(), // UPDATED: Use the method that handles "Other" option
     };
 
     // Validate required field
@@ -398,7 +525,7 @@ class AcademicOApp {
     }
 
     // MISSION D: Enhanced loading with specific message
-    this.showLoading('Searching for study partners worldwide...');
+    this.showLoading("Searching for study partners worldwide...");
 
     try {
       // Get user's timezone for dynamic matching
@@ -473,6 +600,12 @@ class AcademicOApp {
     if (filters.studyType && partner.studyType === filters.studyType) {
       score += 5;
     }
+    if (filters.country && partner.countryCode === filters.country) {
+      score += 10;
+    }
+    if (filters.university && partner.university === filters.university) {
+      score += 15;
+    }
 
     return Math.min(score, 100);
   }
@@ -483,22 +616,22 @@ class AcademicOApp {
   calculateTimezoneCompatibility(partner) {
     // Get current user's timezone info
     const userOffset = -new Date().getTimezoneOffset() / 60;
-    
+
     // Generate realistic partner timezone (for demo)
     const offsets = [0, 1, 2, 3, -5, -8, 5, 7, -3, -1];
     const partnerOffset = offsets[Math.floor(Math.random() * offsets.length)];
-    
+
     const diff = Math.abs(userOffset - partnerOffset);
-    
+
     // Calculate compatibility
     if (diff <= 2) {
-        return { score: 95, level: 'excellent', label: 'Same Region' };
+      return { score: 95, level: "excellent", label: "Same Region" };
     } else if (diff <= 4) {
-        return { score: 80, level: 'good', label: 'Nearby' };
+      return { score: 80, level: "good", label: "Nearby" };
     } else if (diff <= 6) {
-        return { score: 65, level: 'fair', label: 'Moderate' };
+      return { score: 65, level: "fair", label: "Moderate" };
     } else {
-        return { score: 50, level: 'challenging', label: 'Distant' };
+      return { score: 50, level: "challenging", label: "Distant" };
     }
   }
 
@@ -549,50 +682,74 @@ class AcademicOApp {
             `;
     } else {
       container.innerHTML = partners
-        .map(
-          (partner) => {
-            // Calculate timezone compatibility
-            const tzCompatibility = this.calculateTimezoneCompatibility(partner);
-            const badgeClass = `tz-badge ${tzCompatibility.level}`;
-            
-            return `
+        .map((partner) => {
+          // Calculate timezone compatibility
+          const tzCompatibility = this.calculateTimezoneCompatibility(partner);
+          const badgeClass = `tz-badge ${tzCompatibility.level}`;
+
+          return `
                 <div class="partner-card">
                     <div class="partner-header">
-                        <div class="partner-avatar ${partner.isOnline ? "online" : "offline"}">
+                        <div class="partner-avatar ${
+                          partner.isOnline ? "online" : "offline"
+                        }">
                             ${partner.name.charAt(0)}
                         </div>
                         <div class="partner-info">
-                            <h3>${partner.name} ${partner.isOnline ? "🟢" : "⚫"}</h3>
-                            <span class="partner-university">${partner.university || "Student"}</span>
-                            <span class="partner-course">${partner.course} • ${partner.matchScore}% match</span>
+                            <h3>${partner.name} ${
+            partner.isOnline ? "" : ""
+          }</h3>
+                            <span class="partner-university">${
+                              partner.university || "Student"
+                            }</span>
+                            <span class="partner-course">${partner.course} • ${
+            partner.matchScore
+          }% match</span>
                         </div>
                     </div>
                     
                     <!-- NEW: Timezone Compatibility Badge -->
                     <div class="${badgeClass}">
-                        🌍 ${tzCompatibility.label} • ${tzCompatibility.score}% time match
+                        ${tzCompatibility.label} • ${
+            tzCompatibility.score
+          }% time match
                     </div>
                     
                     <div class="partner-details">
-                        <div class="detail-item">📚 <strong>Topic:</strong> ${partner.topic}</div>
-                        <div class="detail-item">⏰ <strong>Available:</strong> ${this.formatAvailability(partner.availability)}</div>
-                        <div class="detail-item">🕐 <strong>Local Time:</strong> ${partner.localTime}</div>
-                        <div class="detail-item">👥 <strong>Study Style:</strong> ${this.formatStudyType(partner.studyType)}</div>
-                        <div class="detail-item">💬 <strong>${partner.responseTime}</strong></div>
-                        <div class="last-active">Last active: ${partner.lastActive}</div>
+                        <div class="detail-item"><strong>Topic:</strong> ${
+                          partner.topic
+                        }</div>
+                        <div class="detail-item"><strong>Available:</strong> ${this.formatAvailability(
+                          partner.availability
+                        )}</div>
+                        <div class="detail-item"><strong>Local Time:</strong> ${
+                          partner.localTime
+                        }</div>
+                        <div class="detail-item"><strong>Study Style:</strong> ${this.formatStudyType(
+                          partner.studyType
+                        )}</div>
+                        <div class="detail-item"><strong>${
+                          partner.responseTime
+                        }</strong></div>
+                        <div class="last-active">Last active: ${
+                          partner.lastActive
+                        }</div>
                     </div>
                     <div class="partner-actions">
-                        <button class="action-btn chat-btn" onclick="app.startChat('${partner.id}', '${partner.name}')">
-                            💬 Message
+                        <button class="action-btn chat-btn" onclick="app.startChat('${
+                          partner.id
+                        }', '${partner.name}')">
+                            Message
                         </button>
-                        <button class="action-btn connect-btn" onclick="app.connectPartner('${partner.id}')">
-                            👥 Connect
+                        <button class="action-btn connect-btn" onclick="app.connectPartner('${
+                          partner.id
+                        }')">
+                            Connect
                         </button>
                     </div>
                 </div>
             `;
-          }
-        )
+        })
         .join("");
     }
 
@@ -619,14 +776,14 @@ class AcademicOApp {
   }
 
   startChat(userId, userName) {
-    console.log(`💬 Starting chat with ${userName} (${userId})`);
+    console.log(`Starting chat with ${userName} (${userId})`);
 
     // Safety check - wait for chatService to be ready
     if (typeof chatService === "undefined" || !chatService.isReady()) {
       errorHandler.showUserError(
         "Chat is still loading. Please wait a moment and try again."
       );
-      console.log("❌ Chat service not ready yet");
+      console.log("Chat service not ready yet");
       return;
     }
 
@@ -648,14 +805,12 @@ class AcademicOApp {
     // Open chat modal
     this.openChatModal();
 
-    errorHandler.showSuccess(
-      `Chat opened with ${userName}! Start typing...`
-    );
+    errorHandler.showSuccess(`Chat opened with ${userName}! Start typing...`);
   }
 
   connectPartner(userId) {
     errorHandler.showSuccess(
-      "👥 Connection request sent! The user will be notified."
+      "Connection request sent! The user will be notified."
     );
   }
 
@@ -716,7 +871,7 @@ class AcademicOApp {
 
     // Re-append sorted cards
     partnerCards.forEach((card) => container.appendChild(card));
-    console.log(`✅ Sorted results by: ${sortBy}`);
+    console.log(`Sorted results by: ${sortBy}`);
   }
 
   /**
@@ -812,7 +967,7 @@ class AcademicOApp {
     // Video call button (demo functionality)
     this.safeAddEventListener("startVideoCall", "click", () => {
       errorHandler.showSuccess(
-        "📹 Video call would start here! (Integration with WebRTC)"
+        "Video call would start here! (Integration with WebRTC)"
       );
     });
   }
@@ -891,7 +1046,7 @@ class AcademicOApp {
     // Listen for new messages and auto-respond
     if (typeof firebase !== "undefined" && firebase.database) {
       // This would be where we set up auto-responder for demo
-      console.log("🤖 Demo auto-responder ready");
+      console.log("Demo auto-responder ready");
     }
   }
 
@@ -939,9 +1094,9 @@ class AcademicOApp {
         name: "Demo User",
         email: "demo@academico.com",
         country: "Rwanda",
-        university: "University of Rwanda"
+        university: "University of Rwanda",
       };
-      console.log("👤 Demo user created:", this.currentUser.id);
+      console.log("Demo user created:", this.currentUser.id);
     }
   }
 
@@ -1039,9 +1194,9 @@ class AcademicOApp {
    */
   getDynamicGreeting() {
     const hour = new Date().getHours();
-    if (hour < 12) return "Good morning! Ready to study? 🌅";
-    if (hour < 18) return "Good afternoon! Let's learn! ☀️";
-    return "Good evening! Time to focus! 🌙";
+    if (hour < 12) return "Good morning! Ready to study?";
+    if (hour < 18) return "Good afternoon! Let's learn!";
+    return "Good evening! Time to focus!";
   }
 
   /**
@@ -1053,23 +1208,23 @@ class AcademicOApp {
 
     const tips = {
       morning: [
-        "🌅 Mornings are great for learning new concepts!",
-        "📚 Start your day with focused reading sessions",
-        "💡 Fresh mind = Better retention in the morning",
+        "Mornings are great for learning new concepts!",
+        "Start your day with focused reading sessions",
+        "Fresh mind = Better retention in the morning",
       ],
       afternoon: [
-        "☀️ Afternoons are perfect for group discussions!",
-        "👥 Ideal time for collaborative problem solving",
-        "📝 Great for practicing and applying knowledge",
+        "Afternoons are perfect for group discussions!",
+        "Ideal time for collaborative problem solving",
+        "Great for practicing and applying knowledge",
       ],
       evening: [
-        "🌙 Evenings are best for review sessions!",
-        "🔄 Perfect time to recap what you learned",
-        "📖 Good for flashcards and memory reinforcement",
+        "Evenings are best for review sessions!",
+        "Perfect time to recap what you learned",
+        "Good for flashcards and memory reinforcement",
       ],
     };
 
-    return tips[currentPeriod] || ["Study smart, not just hard! 💪"];
+    return tips[currentPeriod] || ["Study smart, not just hard!"];
   }
 
   /**
@@ -1102,7 +1257,7 @@ class AcademicOApp {
       }
     }
 
-    tipElement.innerHTML = `💡 <strong>Study Tip:</strong> ${tip}`;
+    tipElement.innerHTML = `<strong>Study Tip:</strong> ${tip}`;
   }
 
   /**
@@ -1119,10 +1274,10 @@ class AcademicOApp {
    * DYNAMIC: Get study break activity from API
    */
   async getStudyBreakActivity() {
-    console.log("🎯 Getting study break...");
+    console.log("Getting study break...");
 
     // MISSION D: Show loading for API call
-    this.showLoading('Finding a study break activity...');
+    this.showLoading("Finding a study break activity...");
 
     try {
       // Use the proven working API
@@ -1131,7 +1286,7 @@ class AcademicOApp {
       if (response.ok) {
         const data = await response.json();
         alert(
-          `💡 Study Break Wisdom:\n\n"${data.slip.advice}"\n\nTake a moment to reflect! 🧠`
+          `Study Break Wisdom:\n\n"${data.slip.advice}"\n\nTake a moment to reflect!`
         );
       } else {
         // Fallback if API has temporary issues
@@ -1152,10 +1307,13 @@ class AcademicOApp {
       "Take a 5-minute walk and stretch",
       "Do 10 deep breathing exercises",
       "Get a glass of water and hydrate",
-      "Look away from screen for 2 minutes"
+      "Look away from screen for 2 minutes",
     ];
-    const activity = fallbackActivities[Math.floor(Math.random() * fallbackActivities.length)];
-    alert(`💡 Study Break Suggestion:\n\n${activity}\n\nYour eyes and brain will thank you! 🧠`);
+    const activity =
+      fallbackActivities[Math.floor(Math.random() * fallbackActivities.length)];
+    alert(
+      `Study Break Suggestion:\n\n${activity}\n\nYour eyes and brain will thank you!`
+    );
   }
 }
 

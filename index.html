@@ -274,6 +274,21 @@
                 </div>
               </div>
 
+              <!-- Custom University Input for Search (hidden by default) -->
+              <div
+                class="form-group hidden"
+                id="searchCustomUniversityContainer"
+              >
+                <label for="searchCustomUniversity" class="form-label">
+                  <i class="fas fa-edit"></i> Enter University Name
+                </label>
+                <input
+                  type="text"
+                  id="searchCustomUniversity"
+                  placeholder="Enter the university name you're looking for"
+                />
+              </div>
+
               <button type="submit" class="search-button">
                 <i class="fas fa-search"></i> Search Study Partners
               </button>
@@ -472,7 +487,7 @@
         </button>
         <div class="auth-card">
           <div class="auth-header">
-            <h2>Welcome Back! <i class="fas fa-hand-wave"></i></h2>
+            <h2>Welcome Back!</h2>
             <p>Login to your AcademicO account</p>
           </div>
           <form class="auth-form" id="loginForm">
@@ -524,7 +539,7 @@
         </button>
         <div class="auth-card">
           <div class="auth-header">
-            <h2>Join AcademicO! <i class="fas fa-graduation-cap"></i></h2>
+            <h2>Join AcademicO!</h2>
             <p>Create your account and start studying smarter</p>
           </div>
           <form class="auth-form" id="registerForm">
@@ -576,24 +591,12 @@
             <!-- Custom University Input (hidden by default) -->
             <div class="form-group hidden" id="customUniversityContainer">
               <label for="customUniversity">
-                <i class="fas fa-edit"></i> Enter Your University Name
+                <i class="fas fa-edit"></i> Enter Your University
               </label>
               <input
                 type="text"
                 id="customUniversity"
                 placeholder="Enter your university name"
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="regCourse">
-                <i class="fas fa-book"></i> Course/Program
-              </label>
-              <input
-                type="text"
-                id="regCourse"
-                placeholder="e.g., Computer Science, Medicine, Business"
-                required
               />
             </div>
 
