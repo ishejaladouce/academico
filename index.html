@@ -191,6 +191,12 @@
           <i class="fas fa-graduation-cap"></i> Built for better learning
           experiences • Empowering students worldwide
         </p>
+        <!-- Admin Access Link in Footer -->
+        <div class="admin-access-footer">
+          <button class="admin-login-link" id="adminLoginBtn">
+            <i class="fas fa-shield-alt"></i> Admin Access
+          </button>
+        </div>
       </div>
     </footer>
 
@@ -392,12 +398,95 @@
       </div>
     </div>
 
+    <!-- ADD THIS: Admin Login Modal -->
+    <div class="modal hidden" id="adminLoginModal">
+      <div class="modal-overlay" id="adminOverlay"></div>
+      <div class="modal-content">
+        <button class="modal-close" id="closeAdminModal">
+          <i class="fas fa-times"></i>
+        </button>
+        <div class="auth-card">
+          <div class="auth-header">
+            <h2><i class="fas fa-shield-alt"></i> Admin Login</h2>
+            <p>Administrator Access Portal</p>
+          </div>
+          <form class="auth-form" id="adminLoginForm">
+            <div class="form-group">
+              <label for="adminEmail">
+                <i class="fas fa-user-shield"></i> Admin Email/Username
+              </label>
+              <input
+                type="text"
+                id="adminEmail"
+                placeholder="Enter admin credentials"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="adminPassword">
+                <i class="fas fa-lock"></i> Password
+              </label>
+              <input
+                type="password"
+                id="adminPassword"
+                placeholder="Enter admin password"
+                required
+              />
+            </div>
+            <button type="submit" class="auth-submit-btn admin-submit">
+              <i class="fas fa-sign-in-alt"></i> Login as Admin
+            </button>
+          </form>
+          <div class="admin-login-info">
+            <h4>Default Admin Credentials</h4>
+            <p><strong>Username:</strong> admin</p>
+            <p><strong>Password:</strong> admin123</p>
+            <p class="warning">
+              <i class="fas fa-exclamation-triangle"></i> Change these
+              credentials in production!
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Scripts -->
     <script src="js/errorHandler.js"></script>
     <script src="js/api.js"></script>
     <script src="js/countries.js"></script>
     <script src="js/universities.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/admin-auth.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/admin-login.js"></script>
   </body>
+
+  <!-- Temporary debug script -->
+  <script>
+    console.log("=== DEBUGGING ADMIN LOGIN ===");
+
+    // Check if admin button exists
+    const adminBtn = document.getElementById("adminLoginBtn");
+    console.log("Admin button found:", adminBtn);
+
+    // Check if admin modal exists
+    const adminModal = document.getElementById("adminLoginModal");
+    console.log("Admin modal found:", adminModal);
+
+    // Check if admin scripts are loaded
+    console.log("adminAuth available:", typeof adminAuth);
+    console.log("AdminLogin available:", typeof AdminLogin);
+
+    // Manually test button click
+    if (adminBtn) {
+      adminBtn.addEventListener("click", function () {
+        console.log("MANUAL TEST: Admin button clicked!");
+        const modal = document.getElementById("adminLoginModal");
+        if (modal) {
+          console.log("MANUAL TEST: Showing modal");
+          modal.classList.remove("hidden");
+        }
+      });
+    }
+  </script>
 </html>

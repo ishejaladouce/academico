@@ -1,415 +1,462 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard - AcademicO</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="css/dashboard.css" />
-</head>
-<body>
+  </head>
+  <body>
     <!-- Dashboard Header -->
     <header class="dashboard-header">
-        <div class="container">
-            <div class="dashboard-logo">
-                <div class="logo-text">academicO</div>
-                <div class="logo-tagline">Study Partner Network</div>
-            </div>
-            
-            <nav class="dashboard-nav">
-                <div class="nav-items">
-                    <a href="#search" class="nav-link active" data-section="searchSection">
-                        <i class="fas fa-search"></i> Find Partners
-                    </a>
-                    <a href="#messages" class="nav-link" data-section="messagesSection">
-                        <i class="fas fa-comments"></i> Messages
-                        <span class="notification-badge hidden" id="messageNotification">0</span>
-                    </a>
-                    <a href="#connections" class="nav-link" data-section="connectionsSection">
-                        <i class="fas fa-user-friends"></i> Connections
-                        <span class="notification-badge hidden" id="connectionNotification">0</span>
-                    </a>
-                    <a href="#profile" class="nav-link" data-section="profileSection">
-                        <i class="fas fa-user"></i> Profile
-                    </a>
-                </div>
-                
-                <div class="user-menu">
-                    <button class="user-btn" id="userMenuBtn">
-                        <div class="user-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <span id="userName">User</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                    <div class="user-dropdown hidden" id="userDropdown">
-                        <a href="#settings" class="dropdown-item">
-                            <i class="fas fa-cog"></i> Settings
-                        </a>
-                        <a href="#admin" class="dropdown-item admin-only hidden" id="adminDashboardBtn">
-                            <i class="fas fa-shield-alt"></i> Admin Dashboard
-                        </a>
-                        <button class="dropdown-item" id="logoutBtn">
-                            <i class="fas fa-sign-out-alt"></i> Logout
-                        </button>
-                    </div>
-                </div>
-            </nav>
+      <div class="container">
+        <div class="dashboard-logo">
+          <div class="logo-text">academicO</div>
+          <div class="logo-tagline">Study Partner Network</div>
         </div>
+
+        <nav class="dashboard-nav">
+          <div class="nav-items">
+            <a
+              href="#search"
+              class="nav-link active"
+              data-section="searchSection"
+            >
+              <i class="fas fa-search"></i> Find Partners
+            </a>
+            <a href="#messages" class="nav-link" data-section="messagesSection">
+              <i class="fas fa-comments"></i> Messages
+              <span class="notification-badge hidden" id="messageNotification"
+                >0</span
+              >
+            </a>
+            <a
+              href="#connections"
+              class="nav-link"
+              data-section="connectionsSection"
+            >
+              <i class="fas fa-user-friends"></i> Connections
+              <span
+                class="notification-badge hidden"
+                id="connectionNotification"
+                >0</span
+              >
+            </a>
+            <a href="#profile" class="nav-link" data-section="profileSection">
+              <i class="fas fa-user"></i> Profile
+            </a>
+          </div>
+
+          <div class="user-menu">
+            <button class="user-btn" id="userMenuBtn">
+              <div class="user-avatar">
+                <i class="fas fa-user"></i>
+              </div>
+              <span id="userName">User</span>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div class="user-dropdown hidden" id="userDropdown">
+              <a href="#settings" class="dropdown-item">
+                <i class="fas fa-cog"></i> Settings
+              </a>
+              <a
+                href="#admin"
+                class="dropdown-item admin-only hidden"
+                id="adminDashboardBtn"
+              >
+                <i class="fas fa-shield-alt"></i> Admin Dashboard
+              </a>
+              <button class="dropdown-item" id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i> Logout
+              </button>
+            </div>
+          </div>
+        </nav>
+      </div>
     </header>
 
     <main class="dashboard-main">
-        <!-- Search Section -->
-        <section class="dashboard-section active" id="searchSection">
-            <div class="container">
-                <div class="section-header">
-                    <h2>Find Study Partners</h2>
-                    <p>Search for students who match your study preferences</p>
+      <!-- Search Section -->
+      <section class="dashboard-section active" id="searchSection">
+        <div class="container">
+          <div class="section-header">
+            <h2>Find Study Partners</h2>
+            <p>Search for students who match your study preferences</p>
+          </div>
+
+          <div class="search-card">
+            <form id="studySearchForm" class="search-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="courseInput" class="form-label">
+                    <i class="fas fa-book"></i> Course
+                  </label>
+                  <input
+                    type="text"
+                    id="courseInput"
+                    placeholder="e.g., Computer Science, Mathematics"
+                    required
+                  />
                 </div>
 
-                <div class="search-card">
-                    <form id="studySearchForm" class="search-form">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="courseInput" class="form-label">
-                                    <i class="fas fa-book"></i> Course
-                                </label>
-                                <input type="text" id="courseInput" placeholder="e.g., Computer Science, Mathematics" required />
-                            </div>
+                <div class="form-group">
+                  <label for="topicInput" class="form-label">
+                    <i class="fas fa-bullseye"></i> Topic
+                  </label>
+                  <input
+                    type="text"
+                    id="topicInput"
+                    placeholder="e.g., Web Development, Calculus"
+                  />
+                </div>
+              </div>
 
-                            <div class="form-group">
-                                <label for="topicInput" class="form-label">
-                                    <i class="fas fa-bullseye"></i> Topic
-                                </label>
-                                <input type="text" id="topicInput" placeholder="e.g., Web Development, Calculus" />
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="availabilitySelect" class="form-label">
-                                    <i class="fas fa-clock"></i> Availability
-                                </label>
-                                <select id="availabilitySelect">
-                                    <option value="">Any time</option>
-                                    <option value="morning">Mornings</option>
-                                    <option value="afternoon">Afternoons</option>
-                                    <option value="evening">Evenings</option>
-                                    <option value="weekend">Weekends</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="studyTypeSelect" class="form-label">
-                                    <i class="fas fa-users"></i> Study Style
-                                </label>
-                                <select id="studyTypeSelect">
-                                    <option value="">Any style</option>
-                                    <option value="group">Group Study</option>
-                                    <option value="pair">One-on-One</option>
-                                    <option value="project">Project Collaboration</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="countryFilter" class="form-label">
-                                    <i class="fas fa-globe"></i> Country Filter
-                                </label>
-                                <select id="countryFilter">
-                                    <option value="">All Countries</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="universityFilter" class="form-label">
-                                    <i class="fas fa-university"></i> University Filter
-                                </label>
-                                <select id="universityFilter">
-                                    <option value="">All Universities</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="search-button">
-                            <i class="fas fa-search"></i> Search Study Partners
-                        </button>
-                    </form>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="availabilitySelect" class="form-label">
+                    <i class="fas fa-clock"></i> Availability
+                  </label>
+                  <select id="availabilitySelect">
+                    <option value="">Any time</option>
+                    <option value="morning">Mornings</option>
+                    <option value="afternoon">Afternoons</option>
+                    <option value="evening">Evenings</option>
+                    <option value="weekend">Weekends</option>
+                  </select>
                 </div>
 
-                <!-- Study Break Button -->
-                <div class="study-break-container">
-                    <button class="study-break-btn" id="studyBreakBtn">
-                        <i class="fas fa-brain"></i> Need a Study Break?
+                <div class="form-group">
+                  <label for="studyTypeSelect" class="form-label">
+                    <i class="fas fa-users"></i> Study Style
+                  </label>
+                  <select id="studyTypeSelect">
+                    <option value="">Any style</option>
+                    <option value="group">Group Study</option>
+                    <option value="pair">One-on-One</option>
+                    <option value="project">Project Collaboration</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="countryFilter" class="form-label">
+                    <i class="fas fa-globe"></i> Country Filter
+                  </label>
+                  <select id="countryFilter">
+                    <option value="">All Countries</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="universityFilter" class="form-label">
+                    <i class="fas fa-university"></i> University Filter
+                  </label>
+                  <select id="universityFilter">
+                    <option value="">All Universities</option>
+                  </select>
+                </div>
+              </div>
+
+              <button type="submit" class="search-button">
+                <i class="fas fa-search"></i> Search Study Partners
+              </button>
+            </form>
+          </div>
+
+          <!-- Study Break Button -->
+          <div class="study-break-container">
+            <button class="study-break-btn" id="studyBreakBtn">
+              <i class="fas fa-brain"></i> Need a Study Break?
+            </button>
+          </div>
+
+          <!-- Results Section -->
+          <div class="results-section hidden" id="resultsSection">
+            <div class="results-header">
+              <h3>Available Study Partners</h3>
+              <div class="results-controls">
+                <div class="results-count" id="resultsCount">
+                  Found 0 partners
+                </div>
+                <div class="sort-controls">
+                  <label for="sortBy">Sort by:</label>
+                  <select id="sortBy">
+                    <option value="matchScore">Best Match</option>
+                    <option value="online">Online First</option>
+                    <option value="responseTime">Quick Responders</option>
+                    <option value="recent">Recently Active</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="results-container" id="resultsContainer">
+              <!-- Results will appear here -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Messages Section -->
+      <section class="dashboard-section hidden" id="messagesSection">
+        <div class="container">
+          <div class="section-header">
+            <h2>Messages</h2>
+            <p>Chat with your study partners</p>
+          </div>
+
+          <div class="messages-container">
+            <div class="conversations-list">
+              <div class="conversations-header">
+                <h4>Conversations</h4>
+                <button class="new-chat-btn" id="newChatBtn">
+                  <i class="fas fa-plus"></i> New Chat
+                </button>
+              </div>
+              <div class="conversations" id="conversationsList">
+                <!-- Conversations will be loaded here by JavaScript -->
+                <div class="no-conversations">
+                  <i class="fas fa-comments"></i>
+                  <p>Loading conversations...</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="chat-area">
+              <div class="chat-placeholder" id="chatPlaceholder">
+                <div class="placeholder-content">
+                  <i class="fas fa-comments"></i>
+                  <h3>Select a conversation</h3>
+                  <p>Choose a conversation from the list to start chatting</p>
+                </div>
+              </div>
+
+              <div class="active-chat hidden" id="activeChat">
+                <div class="chat-header">
+                  <div class="chat-partner-info">
+                    <div class="partner-avatar">
+                      <i class="fas fa-user"></i>
+                    </div>
+                    <div>
+                      <h4 id="chatPartnerName">Partner Name</h4>
+                      <span class="partner-status" id="partnerStatus"
+                        >Online</span
+                      >
+                    </div>
+                  </div>
+                  <div class="chat-actions">
+                    <button
+                      class="action-btn video-call-btn"
+                      id="startVideoCall"
+                    >
+                      <i class="fas fa-video"></i> Video Call
                     </button>
+                    <button class="action-btn more-btn">
+                      <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                  </div>
                 </div>
 
-                <!-- Results Section -->
-                <div class="results-section hidden" id="resultsSection">
-                    <div class="results-header">
-                        <h3>Available Study Partners</h3>
-                        <div class="results-controls">
-                            <div class="results-count" id="resultsCount">Found 0 partners</div>
-                            <div class="sort-controls">
-                                <label for="sortBy">Sort by:</label>
-                                <select id="sortBy">
-                                    <option value="matchScore">Best Match</option>
-                                    <option value="online">Online First</option>
-                                    <option value="responseTime">Quick Responders</option>
-                                    <option value="recent">Recently Active</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="results-container" id="resultsContainer">
-                        <!-- Results will appear here -->
-                    </div>
+                <div class="chat-messages" id="chatMessages">
+                  <!-- Messages will appear here -->
                 </div>
+
+                <div class="chat-input">
+                  <input
+                    type="text"
+                    id="messageInput"
+                    placeholder="Type your message..."
+                  />
+                  <button id="sendMessageBtn">
+                    <i class="fas fa-paper-plane"></i>
+                  </button>
+                </div>
+              </div>
             </div>
-        </section>
+          </div>
+        </div>
+      </section>
 
-        <!-- Messages Section -->
-        <section class="dashboard-section hidden" id="messagesSection">
-            <div class="container">
-                <div class="section-header">
-                    <h2>Messages</h2>
-                    <p>Chat with your study partners</p>
+      <!-- Connections Section -->
+      <section class="dashboard-section hidden" id="connectionsSection">
+        <div class="container">
+          <div class="section-header">
+            <h2>My Connections</h2>
+            <p>Manage your study partners and connection requests</p>
+          </div>
+
+          <div class="connections-tabs">
+            <button class="tab-btn active" data-tab="myConnections">
+              My Connections
+            </button>
+            <button class="tab-btn" data-tab="pendingRequests">
+              Pending Requests
+            </button>
+            <button class="tab-btn" data-tab="sentRequests">
+              Sent Requests
+            </button>
+          </div>
+
+          <div class="connections-content">
+            <div class="tab-content active" id="myConnections">
+              <div class="connections-grid" id="connectionsGrid">
+                <!-- Connections will be loaded here by JavaScript -->
+                <div class="no-connections">
+                  <i class="fas fa-user-friends"></i>
+                  <p>Loading connections...</p>
                 </div>
-                
-                <div class="messages-container">
-                    <div class="conversations-list">
-                        <div class="conversations-header">
-                            <h4>Conversations</h4>
-                            <button class="new-chat-btn" id="newChatBtn">
-                                <i class="fas fa-plus"></i> New Chat
-                            </button>
-                        </div>
-                        <div class="conversations" id="conversationsList">
-                            <!-- Conversations will be loaded here by JavaScript -->
-                            <div class="no-conversations">
-                                <i class="fas fa-comments"></i>
-                                <p>Loading conversations...</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="chat-area">
-                        <div class="chat-placeholder" id="chatPlaceholder">
-                            <div class="placeholder-content">
-                                <i class="fas fa-comments"></i>
-                                <h3>Select a conversation</h3>
-                                <p>Choose a conversation from the list to start chatting</p>
-                            </div>
-                        </div>
-                        
-                        <div class="active-chat hidden" id="activeChat">
-                            <div class="chat-header">
-                                <div class="chat-partner-info">
-                                    <div class="partner-avatar">
-                                        <i class="fas fa-user"></i>
-                                    </div>
-                                    <div>
-                                        <h4 id="chatPartnerName">Partner Name</h4>
-                                        <span class="partner-status" id="partnerStatus">Online</span>
-                                    </div>
-                                </div>
-                                <div class="chat-actions">
-                                    <button class="action-btn video-call-btn" id="startVideoCall">
-                                        <i class="fas fa-video"></i> Video Call
-                                    </button>
-                                    <button class="action-btn more-btn">
-                                        <i class="fas fa-ellipsis-v"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div class="chat-messages" id="chatMessages">
-                                <!-- Messages will appear here -->
-                            </div>
-                            
-                            <div class="chat-input">
-                                <input type="text" id="messageInput" placeholder="Type your message..." />
-                                <button id="sendMessageBtn">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+              </div>
             </div>
-        </section>
 
-        <!-- Connections Section -->
-        <section class="dashboard-section hidden" id="connectionsSection">
-            <div class="container">
-                <div class="section-header">
-                    <h2>My Connections</h2>
-                    <p>Manage your study partners and connection requests</p>
+            <div class="tab-content" id="pendingRequests">
+              <div class="requests-list" id="pendingRequestsList">
+                <!-- Pending requests will appear here -->
+                <div class="no-requests">
+                  <i class="fas fa-clock"></i>
+                  <p>No pending requests</p>
                 </div>
-                
-                <div class="connections-tabs">
-                    <button class="tab-btn active" data-tab="myConnections">My Connections</button>
-                    <button class="tab-btn" data-tab="pendingRequests">Pending Requests</button>
-                    <button class="tab-btn" data-tab="sentRequests">Sent Requests</button>
-                </div>
-                
-                <div class="connections-content">
-                    <div class="tab-content active" id="myConnections">
-                        <div class="connections-grid" id="connectionsGrid">
-                            <!-- Connections will be loaded here by JavaScript -->
-                            <div class="no-connections">
-                                <i class="fas fa-user-friends"></i>
-                                <p>Loading connections...</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="tab-content" id="pendingRequests">
-                        <div class="requests-list" id="pendingRequestsList">
-                            <!-- Pending requests will appear here -->
-                            <div class="no-requests">
-                                <i class="fas fa-clock"></i>
-                                <p>No pending requests</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="tab-content" id="sentRequests">
-                        <div class="requests-list" id="sentRequestsList">
-                            <!-- Sent requests will appear here -->
-                            <div class="no-requests">
-                                <i class="fas fa-paper-plane"></i>
-                                <p>No sent requests</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+              </div>
             </div>
-        </section>
 
-        <!-- Profile Section -->
-        <section class="dashboard-section hidden" id="profileSection">
-            <div class="container">
-                <div class="section-header">
-                    <h2>My Profile</h2>
-                    <p>Manage your account information and study preferences</p>
+            <div class="tab-content" id="sentRequests">
+              <div class="requests-list" id="sentRequestsList">
+                <!-- Sent requests will appear here -->
+                <div class="no-requests">
+                  <i class="fas fa-paper-plane"></i>
+                  <p>No sent requests</p>
                 </div>
-                
-                <div class="profile-card">
-                    <div class="profile-header">
-                        <div class="profile-avatar">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div class="profile-info">
-                            <h3 id="profileUserName">User Name</h3>
-                            <p id="profileUserEmail">user@email.com</p>
-                            <p id="profileUserUniversity">University</p>
-                        </div>
-                        <button class="edit-profile-btn" id="editProfileBtn">
-                            <i class="fas fa-edit"></i> Edit Profile
-                        </button>
-                    </div>
-                    
-                    <div class="profile-details">
-                        <div class="detail-group">
-                            <h4>Study Information</h4>
-                            <div class="detail-item">
-                                <label>Course:</label>
-                                <span id="profileCourse">Computer Science</span>
-                            </div>
-                            <div class="detail-item">
-                                <label>Availability:</label>
-                                <span id="profileAvailability">Evenings</span>
-                            </div>
-                            <div class="detail-item">
-                                <label>Study Style:</label>
-                                <span id="profileStudyType">Group Study</span>
-                            </div>
-                        </div>
-                        
-                        <div class="detail-group">
-                            <h4>Account Information</h4>
-                            <div class="detail-item">
-                                <label>Member since:</label>
-                                <span id="profileJoinDate">January 2024</span>
-                            </div>
-                            <div class="detail-item">
-                                <label>Total connections:</label>
-                                <span id="profileConnectionsCount">0</span>
-                            </div>
-                            <div class="detail-item">
-                                <label>Active study groups:</label>
-                                <span id="profileStudyGroups">0</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+              </div>
             </div>
-        </section>
+          </div>
+        </div>
+      </section>
 
-        <!-- Admin Dashboard Section -->
-        <section class="dashboard-section hidden" id="adminSection">
-            <div class="container">
-                <div class="section-header">
-                    <h2>Admin Dashboard</h2>
-                    <p>Manage users and platform statistics</p>
-                </div>
-                
-                <div class="admin-stats">
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="adminTotalUsers">0</h3>
-                            <p>Total Users</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-comments"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="adminTotalMessages">0</h3>
-                            <p>Total Messages</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-user-friends"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="adminTotalConnections">0</h3>
-                            <p>Total Connections</p>
-                        </div>
-                    </div>
-                </div>
+      <!-- Profile Section -->
+      <section class="dashboard-section hidden" id="profileSection">
+        <div class="container">
+          <div class="section-header">
+            <h2>My Profile</h2>
+            <p>Manage your account information and study preferences</p>
+          </div>
 
-                <div class="admin-users-table">
-                    <h3>Registered Users</h3>
-                    <div class="table-container">
-                        <table id="usersTable">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>University</th>
-                                    <th>Course</th>
-                                    <th>Joined</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="usersTableBody">
-                                <!-- Users will appear here -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+          <div class="profile-card">
+            <div class="profile-header">
+              <div class="profile-avatar">
+                <i class="fas fa-user"></i>
+              </div>
+              <div class="profile-info">
+                <h3 id="profileUserName">User Name</h3>
+                <p id="profileUserEmail">user@email.com</p>
+                <p id="profileUserUniversity">University</p>
+              </div>
+              <button class="edit-profile-btn" id="editProfileBtn">
+                <i class="fas fa-edit"></i> Edit Profile
+              </button>
             </div>
-        </section>
+
+            <div class="profile-details">
+              <div class="detail-group">
+                <h4>Study Information</h4>
+                <div class="detail-item">
+                  <label>Course:</label>
+                  <span id="profileCourse">Computer Science</span>
+                </div>
+                <div class="detail-item">
+                  <label>Availability:</label>
+                  <span id="profileAvailability">Evenings</span>
+                </div>
+                <div class="detail-item">
+                  <label>Study Style:</label>
+                  <span id="profileStudyType">Group Study</span>
+                </div>
+              </div>
+
+              <div class="detail-group">
+                <h4>Account Information</h4>
+                <div class="detail-item">
+                  <label>Member since:</label>
+                  <span id="profileJoinDate">January 2024</span>
+                </div>
+                <div class="detail-item">
+                  <label>Total connections:</label>
+                  <span id="profileConnectionsCount">0</span>
+                </div>
+                <div class="detail-item">
+                  <label>Active study groups:</label>
+                  <span id="profileStudyGroups">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Admin Dashboard Section -->
+      <section class="dashboard-section hidden" id="adminSection">
+        <div class="container">
+          <div class="section-header">
+            <h2>Admin Dashboard</h2>
+            <p>Manage users and platform statistics</p>
+          </div>
+
+          <div class="admin-stats">
+            <div class="stat-card">
+              <div class="stat-icon">
+                <i class="fas fa-users"></i>
+              </div>
+              <div class="stat-info">
+                <h3 id="adminTotalUsers">0</h3>
+                <p>Total Users</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">
+                <i class="fas fa-comments"></i>
+              </div>
+              <div class="stat-info">
+                <h3 id="adminTotalMessages">0</h3>
+                <p>Total Messages</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">
+                <i class="fas fa-user-friends"></i>
+              </div>
+              <div class="stat-info">
+                <h3 id="adminTotalConnections">0</h3>
+                <p>Total Connections</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-users-table">
+            <h3>Registered Users</h3>
+            <div class="table-container">
+              <table id="usersTable">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>University</th>
+                    <th>Course</th>
+                    <th>Joined</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                  <!-- Users will appear here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
 
     <!-- Scripts -->
@@ -421,5 +468,20 @@
     <script src="js/messages.js"></script>
     <script src="js/connections.js"></script>
     <script src="js/dashboard.js"></script>
-</body>
+
+    <!-- Admin Button Visibility Script -->
+    <script>
+      // Check if user is admin and show admin button
+      document.addEventListener("DOMContentLoaded", function () {
+        const userData = localStorage.getItem("academico_current_user");
+        if (userData) {
+          const user = JSON.parse(userData);
+          const adminBtn = document.getElementById("adminDashboardBtn");
+          if (adminBtn && user.role === "admin") {
+            adminBtn.classList.remove("hidden");
+          }
+        }
+      });
+    </script>
+  </body>
 </html>

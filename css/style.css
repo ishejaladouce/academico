@@ -1264,6 +1264,67 @@ body {
     border-color: #f44336;
 }
 
+/* Admin Access Footer */
+.admin-access-footer {
+  margin-top: 15px;
+  text-align: center;
+}
+
+.admin-login-link {
+  background: transparent;
+  color: #7f8c8d;
+  border: 1px solid #7f8c8d;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s ease;
+}
+
+.admin-login-link:hover {
+  background: #2c3e50;
+  color: white;
+  border-color: #2c3e50;
+}
+
+/* Admin Login Info */
+.admin-login-info {
+  margin-top: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 4px solid #4a90e2;
+}
+
+.admin-login-info h4 {
+  margin: 0 0 10px 0;
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+.admin-login-info p {
+  margin: 5px 0;
+  font-size: 12px;
+  color: #5d6d7e;
+}
+
+.warning {
+  color: #e74c3c !important;
+  font-weight: 600;
+}
+
+/* Admin Submit Button */
+.admin-submit {
+  background: #2c3e50 !important;
+}
+
+.admin-submit:hover {
+  background: #34495e !important;
+}
+
 /* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 768px) {
     .container {
