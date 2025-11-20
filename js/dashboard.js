@@ -1,4 +1,4 @@
-// Dashboard Application using Managers - FULLY FIXED VERSION
+// Dashboard Application using Managers
 class DashboardApp {
   constructor() {
     this.currentUser = null;
@@ -17,13 +17,33 @@ class DashboardApp {
     this.setupEventListeners();
     this.loadUserData();
     this.setupNavigation();
-    this.loadCountries();
-    this.loadUniversities();
+
+    // Add small delay to ensure DOM is fully ready
+    setTimeout(() => {
+      this.loadCountries();
+      this.loadUniversities();
+    }, 100);
+
+    // Request notification permission for messaging
+    await this.requestNotificationPermission();
 
     this.isInitialized = true;
     console.log("Dashboard initialized");
   }
 
+  // notification permissions
+  async requestNotificationPermission() {
+    if ("Notification" in window) {
+      if (Notification.permission === "default") {
+        try {
+          const permission = await Notification.requestPermission();
+          console.log("Notification permission:", permission);
+        } catch (error) {
+          console.log("Error requesting notification permission:", error);
+        }
+      }
+    }
+  }
   initializeManagers() {
     try {
       if (typeof messagesManager !== "undefined") {
@@ -514,70 +534,95 @@ class DashboardApp {
 
     if (partners.length === 0) {
       resultsContainer.innerHTML = `
-        <div class="no-connections">
-          <i class="fas fa-search"></i>
-          <p>No study partners found</p>
-          <p class="small">Try adjusting your search criteria</p>
-        </div>
-      `;
+      <div class="no-connections">
+        <i class="fas fa-search"></i>
+        <p>No study partners found</p>
+        <p class="small">Try adjusting your search criteria</p>
+      </div>
+    `;
     } else {
       resultsContainer.innerHTML = partners
         .map((user) => {
-          const matchScore = Math.floor(Math.random() * 30) + 70; // Random match score 70-100%
+          const matchScore = Math.floor(Math.random() * 30) + 70;
           const isOnline = Math.random() > 0.5;
 
           return `
-          <div class="partner-card">
-            <div class="partner-header">
-              <div class="partner-avatar ${isOnline ? "online" : "offline"}">
-                ${user.name.charAt(0)}${
-            user.name.split(" ")[1]?.charAt(0) || ""
-          }
-              </div>
-              <div class="partner-info">
-                <h3>${user.name}</h3>
-                <span class="partner-university">${
-                  user.university || "Student"
-                }</span>
-                <span class="partner-course">${
-                  user.course || "General"
-                } • ${matchScore}% match</span>
-              </div>
+        <div class="partner-card">
+          <div class="partner-header">
+            <div class="partner-avatar ${isOnline ? "online" : "offline"}">
+              ${user.name.charAt(0)}${user.name.split(" ")[1]?.charAt(0) || ""}
             </div>
-            
-            <div class="partner-details">
-              <div class="detail-item"><strong>Topic:</strong> ${
-                user.topic || "General"
-              }</div>
-              <div class="detail-item"><strong>Available:</strong> ${this.getFormattedAvailability(
-                user.availability
-              )}</div>
-              <div class="detail-item"><strong>Study Style:</strong> ${this.getFormattedStudyType(
-                user.studyType
-              )}</div>
-              <div class="detail-item"><strong>Country:</strong> ${
-                user.country || "Not specified"
-              }</div>
-              <div class="last-active">Last active: ${
-                user.lastActive || "Recently"
-              }</div>
-            </div>
-            <div class="partner-actions">
-              <button class="action-btn chat-btn" onclick="dashboard.startChat('${
-                user.id
-              }', '${user.name}')">
-                Message
-              </button>
-              <button class="action-btn connect-btn" onclick="dashboard.sendConnectionRequest('${
-                user.id
-              }')">
-                Connect
-              </button>
+            <div class="partner-info">
+              <h3>${user.name}</h3>
+              <span class="partner-university">${
+                user.university || "Student"
+              }</span>
+              <span class="partner-course">${
+                user.course || "General"
+              } • ${matchScore}% match</span>
             </div>
           </div>
-        `;
+          
+          <div class="partner-details">
+            <div class="detail-item"><strong>Topic:</strong> ${
+              user.topic || "General"
+            }</div>
+            <div class="detail-item"><strong>Available:</strong> ${this.getFormattedAvailability(
+              user.availability
+            )}</div>
+            <div class="detail-item"><strong>Study Style:</strong> ${this.getFormattedStudyType(
+              user.studyType
+            )}</div>
+            <div class="detail-item"><strong>Country:</strong> ${
+              user.country || "Not specified"
+            }</div>
+            <div class="last-active">Last active: ${
+              user.lastActive || "Recently"
+            }</div>
+          </div>
+          <div class="partner-actions">
+            <button class="action-btn chat-btn" onclick="dashboard.startDynamicChat('${
+              user.id
+            }', '${user.name}')">
+              Start Chat
+            </button>
+            <button class="action-btn connect-btn" onclick="dashboard.sendConnectionRequest('${
+              user.id
+            }')">
+              Connect
+            </button>
+          </div>
+        </div>
+      `;
         })
         .join("");
+    }
+  }
+
+  // Add this new method for dynamic chat starting
+  startDynamicChat(userId, userName) {
+    console.log("Starting dynamic chat with:", userName);
+
+    const currentUser = authManager.getCurrentUser();
+    if (!currentUser) {
+      alert("Please log in to start chatting");
+      return;
+    }
+
+    if (window.chatService) {
+      // Start chat using the enhanced service
+      window.chatService.startChat(currentUser, { id: userId, name: userName });
+
+      // Switch to messages section
+      this.showSection("messagesSection");
+
+      // Show success message
+      errorHandler.showSuccess(
+        `Chat started with ${userName}! They will receive a notification.`
+      );
+    } else {
+      // Fallback
+      this.startChat(userId, userName);
     }
   }
 
@@ -862,6 +907,102 @@ class DashboardApp {
       console.log("Error loading connections:", error);
       this.displayConnections([]);
     }
+  }
+
+  // Add these methods to your DashboardApp class in dashboard.js
+
+  // Request notification permission
+  async requestNotificationPermission() {
+    if ("Notification" in window) {
+      if (Notification.permission === "default") {
+        try {
+          const permission = await Notification.requestPermission();
+          console.log("Notification permission:", permission);
+        } catch (error) {
+          console.log("Error requesting notification permission:", error);
+        }
+      }
+    }
+  }
+
+  // Start dynamic chat with enhanced features
+  startDynamicChat(userId, userName) {
+    console.log("Starting dynamic chat with:", userName);
+
+    const currentUser = authManager.getCurrentUser();
+    if (!currentUser) {
+      alert("Please log in to start chatting");
+      return;
+    }
+
+    if (window.chatService) {
+      window.chatService.startChat(currentUser, { id: userId, name: userName });
+      this.showSection("messagesSection");
+      errorHandler.showSuccess(
+        `Chat started with ${userName}! They will receive a notification.`
+      );
+    } else {
+      this.startChat(userId, userName);
+    }
+  }
+
+  // Enhanced message sending setup
+  setupMessageSending(conversationId) {
+    console.log("Setting up message sending for:", conversationId);
+    const sendButton = document.getElementById("sendMessageBtn");
+    const messageInput = document.getElementById("messageInput");
+
+    if (!sendButton || !messageInput) {
+      console.log("Message sending elements not found");
+      return;
+    }
+
+    const sendMessage = async () => {
+      const messageText = messageInput.value.trim();
+      if (!messageText) return;
+
+      console.log("Sending message:", messageText);
+
+      try {
+        const currentUser = authManager.getCurrentUser();
+        if (currentUser && window.chatService) {
+          await window.chatService.sendMessage(currentUser, messageText);
+        } else {
+          this.displayBasicMessage(messageText);
+        }
+      } catch (error) {
+        console.error("Error sending message:", error);
+      }
+    };
+
+    const newSendButton = sendButton.cloneNode(true);
+    const newMessageInput = messageInput.cloneNode(true);
+
+    sendButton.parentNode.replaceChild(newSendButton, sendButton);
+    messageInput.parentNode.replaceChild(newMessageInput, messageInput);
+
+    newSendButton.onclick = sendMessage;
+    newMessageInput.onkeypress = (e) => {
+      if (e.key === "Enter") sendMessage();
+    };
+  }
+
+  // Basic message display fallback
+  displayBasicMessage(messageText) {
+    const chatMessages = document.getElementById("chatMessages");
+    if (!chatMessages) return;
+
+    const messageElement = document.createElement("div");
+    messageElement.className = "message own";
+    messageElement.innerHTML = `
+    <div class="message-bubble">
+      <div class="message-sender">You</div>
+      <div class="message-text">${messageText}</div>
+      <div class="message-time">${new Date().toLocaleTimeString()}</div>
+    </div>
+  `;
+    chatMessages.appendChild(messageElement);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
   displayConnections(connections) {
