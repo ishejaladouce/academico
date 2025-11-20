@@ -668,6 +668,7 @@ class DashboardApp {
 
   // ==================== MESSAGES FUNCTIONALITY ====================
 
+  // Enhanced conversation loading that uses real matches
   async loadConversations() {
     console.log("Loading conversations...");
     const conversationsList = document.getElementById("conversationsList");
@@ -679,22 +680,47 @@ class DashboardApp {
 
     // Show loading
     conversationsList.innerHTML = `
-      <div class="no-conversations">
-        <i class="fas fa-comments"></i>
-        <p>Loading conversations...</p>
-      </div>
-    `;
+    <div class="no-conversations">
+      <i class="fas fa-comments"></i>
+      <p>Loading your study conversations...</p>
+    </div>
+  `;
 
     try {
-      // Use demo conversations (no API calls)
-      const conversations = this.getDemoConversations();
-      this.displayConversations(conversations);
+      // The chat service now handles conversations with real matches
+      console.log("Chat service managing conversations with actual matches");
     } catch (error) {
       console.log("Error loading conversations:", error);
-      this.displayConversations([]);
     }
   }
 
+  // Start chat with actual match from search results
+  startDynamicChat(userId, userName) {
+    console.log("Starting dynamic chat with actual match:", userName);
+
+    const currentUser = authManager.getCurrentUser();
+    if (!currentUser) {
+      alert("Please log in to start chatting");
+      return;
+    }
+
+    if (window.chatService) {
+      // Find the actual user data to pass to chat service
+      const demoUsers = authManager.getDemoUsers();
+      const matchUser = demoUsers.find((user) => user.id === userId) || {
+        id: userId,
+        name: userName,
+      };
+
+      window.chatService.startChat(currentUser, matchUser);
+      this.showSection("messagesSection");
+      errorHandler.showSuccess(
+        `Chat started with ${userName}! You'll see their messages here.`
+      );
+    } else {
+      this.startChat(userId, userName);
+    }
+  }
   displayConversations(conversations) {
     const conversationsList = document.getElementById("conversationsList");
 

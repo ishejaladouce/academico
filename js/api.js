@@ -7,12 +7,11 @@ const apiService = {
 
   apiCallCount: 0,
 
-  // Get user's timezone - SILENT version
+  // Get user's timezone 
   async getUserTimezone() {
     try {
       this.apiCallCount++;
 
-      // Try primary API with timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
 

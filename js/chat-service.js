@@ -1,10 +1,11 @@
-// Dynamic Chat Service with Real-time Features
+// Dynamic Chat Service Connected to Real User Matches
 class ChatService {
   constructor() {
     this.currentChat = null;
     this.conversations = [];
     this.unreadCount = 0;
     this.messageListeners = [];
+    this.userMatches = []; // Store actual matched users
     this.init();
   }
 
@@ -13,12 +14,71 @@ class ChatService {
     this.loadConversationsFromStorage();
     this.startPollingForNewMessages();
 
-    // Add message listener to update UI when new messages arrive
+    // Load user matches from search results
+    this.loadUserMatches();
+
     this.addMessageListener((chatId, message) => {
       if (this.currentChat === chatId) {
         this.displayMessage(message);
       }
     });
+  }
+
+  // Load actual user matches from search results
+  async loadUserMatches() {
+    try {
+      if (typeof authManager !== "undefined") {
+        // Get demo users that would be your actual matches
+        const demoUsers = authManager.getDemoUsers();
+        this.userMatches = demoUsers.filter(
+          (user) => user.id !== authManager.getCurrentUser()?.id
+        );
+        console.log("Loaded user matches:", this.userMatches.length);
+      }
+    } catch (error) {
+      console.log("Error loading user matches:", error);
+    }
+  }
+
+  // Get actual matched users for incoming messages
+  getMatchedPartners() {
+    if (this.userMatches.length > 0) {
+      return this.userMatches;
+    }
+
+    // Fallback to demo partners if no matches found
+    return [
+      {
+        id: "demo-1",
+        name: "Alex Johnson",
+        course: "Computer Science",
+        university: "University of Rwanda",
+      },
+      {
+        id: "demo-2",
+        name: "Sarah Chen",
+        course: "Mathematics",
+        university: "University of Nairobi",
+      },
+      {
+        id: "demo-3",
+        name: "Mike Davis",
+        course: "Physics",
+        university: "Makerere University",
+      },
+      {
+        id: "demo-4",
+        name: "Emma Wilson",
+        course: "Biology",
+        university: "University of Dar es Salaam",
+      },
+      {
+        id: "demo-5",
+        name: "David Kim",
+        course: "Computer Science",
+        university: "University of Ghana",
+      },
+    ];
   }
 
   // Start polling for new messages
@@ -28,42 +88,39 @@ class ChatService {
     }, 5000);
   }
 
-  // Check for new messages from other users
+  // Check for new messages from actual matches
   async checkForNewMessages() {
-    if (!authManager.getCurrentUser()) return;
+    const currentUser = authManager.getCurrentUser();
+    if (!currentUser) return;
 
     try {
-      if (Math.random() > 0.7) {
-        this.simulateIncomingMessage();
+      // Only simulate messages if we have actual matches
+      const matches = this.getMatchedPartners();
+      if (matches.length > 0 && Math.random() > 0.7) {
+        this.simulateIncomingMessageFromMatch(matches);
       }
     } catch (error) {
       console.log("Error checking messages:", error);
     }
   }
 
-  // Simulate receiving a message from a study partner
-  simulateIncomingMessage() {
-    const demoPartners = [
-      { id: "partner-1", name: "Alex Johnson", course: "Computer Science" },
-      { id: "partner-2", name: "Sarah Chen", course: "Mathematics" },
-      { id: "partner-3", name: "Mike Davis", course: "Physics" },
-    ];
+  // Simulate receiving a message from an actual match
+  simulateIncomingMessageFromMatch(matches) {
+    const randomMatch = matches[Math.floor(Math.random() * matches.length)];
 
-    const randomPartner =
-      demoPartners[Math.floor(Math.random() * demoPartners.length)];
     const studyMessages = [
-      "Hey! Are you available to study this weekend?",
-      "I found some great resources for our project",
-      "Can we schedule a study session for tomorrow?",
-      "I'm stuck on the calculus problem, can you help?",
-      "The study notes you shared were really helpful!",
-      "Are you working on the web development project too?",
+      `Hey! I see we're both studying ${randomMatch.course}. Want to form a study group?`,
+      `I found some great resources for ${randomMatch.course}, want me to share?`,
+      `Are you available to study ${randomMatch.course} this weekend?`,
+      `I'm working on the ${randomMatch.course} project too. Want to collaborate?`,
+      `The ${randomMatch.course} material is challenging. Want to study together?`,
+      `I see you're from ${randomMatch.university}. I'm studying ${randomMatch.course} too!`,
     ];
 
     const randomMessage =
       studyMessages[Math.floor(Math.random() * studyMessages.length)];
 
-    this.receiveMessage(randomPartner.id, randomPartner.name, randomMessage);
+    this.receiveMessage(randomMatch.id, randomMatch.name, randomMessage);
   }
 
   // Receive a message from another user
@@ -112,21 +169,61 @@ class ChatService {
     }
   }
 
-  // Start a chat between two students
+  // Start a chat with an actual match
   startChat(student1, student2) {
     try {
       const chatId = this.generateChatId(student1.id, student2.id);
       this.currentChat = chatId;
 
-      console.log(`Starting chat: ${chatId}`);
+      console.log(
+        `Starting chat between ${student1.name} and ${student2.name}`
+      );
+
+      // Ensure this match is in our conversations
+      this.ensureConversationExists(chatId, student2.name, student2.id);
 
       this.markConversationAsRead(chatId);
       this.loadChatHistory(chatId);
+
+      // Update UI to show active chat
+      this.updateActiveChatUI(student2.name);
+
       return chatId;
     } catch (error) {
       console.error("Error starting chat:", error);
       errorHandler.showUserError("Chat service error occurred.");
     }
+  }
+
+  // Ensure conversation exists in the list
+  ensureConversationExists(chatId, partnerName, partnerId) {
+    const existingConv = this.conversations.find((conv) => conv.id === chatId);
+    if (!existingConv) {
+      this.conversations.unshift({
+        id: chatId,
+        partnerId: partnerId,
+        partnerName: partnerName,
+        lastMessage: "Start a conversation...",
+        lastMessageTime: new Date(),
+        unreadCount: 0,
+      });
+      this.saveConversationsToStorage();
+      this.updateConversationsUI();
+    }
+  }
+
+  // Update UI to show active chat
+  updateActiveChatUI(partnerName) {
+    const chatPlaceholder = document.getElementById("chatPlaceholder");
+    const activeChat = document.getElementById("activeChat");
+    const chatPartnerName = document.getElementById("chatPartnerName");
+
+    if (chatPlaceholder) chatPlaceholder.classList.add("hidden");
+    if (activeChat) {
+      activeChat.classList.remove("hidden");
+      activeChat.classList.add("active");
+    }
+    if (chatPartnerName) chatPartnerName.textContent = partnerName;
   }
 
   // Mark all messages in conversation as read
@@ -137,6 +234,13 @@ class ChatService {
       `academico_chat_${chatId}`,
       JSON.stringify(updatedMessages)
     );
+
+    // Update conversation unread count
+    const conversation = this.conversations.find((conv) => conv.id === chatId);
+    if (conversation) {
+      conversation.unreadCount = 0;
+      this.saveConversationsToStorage();
+    }
 
     this.unreadCount = Math.max(0, this.unreadCount - 1);
     this.updateNotificationBadges();
@@ -180,8 +284,9 @@ class ChatService {
 
       console.log("Message sent:", message);
 
+      // Simulate response from the actual match you're chatting with
       setTimeout(() => {
-        this.simulatePartnerResponse(sender);
+        this.simulateMatchResponse(sender);
       }, 2000 + Math.random() * 3000);
     } catch (error) {
       console.error("Error sending message:", error);
@@ -189,40 +294,32 @@ class ChatService {
     }
   }
 
-  // Simulate a partner responding to your message
-  simulatePartnerResponse(sender) {
+  // Simulate a response from the actual match
+  simulateMatchResponse(sender) {
     if (!this.currentChat) return;
-
-    const responses = [
-      "That's a great point! I was thinking the same thing.",
-      "I can help with that. Let me share my notes.",
-      "What time works best for you to study?",
-      "I found this resource that might help us...",
-      "Can you explain that concept again?",
-      "I'm available tomorrow afternoon if that works?",
-    ];
-
-    const randomResponse =
-      responses[Math.floor(Math.random() * responses.length)];
 
     const chatParts = this.currentChat.split("_");
     const partnerId = chatParts[0] === sender.id ? chatParts[1] : chatParts[0];
-    const partnerName = this.getPartnerName(partnerId);
 
-    this.receiveMessage(partnerId, partnerName, randomResponse);
-  }
+    // Find the actual match details
+    const matches = this.getMatchedPartners();
+    const match = matches.find((m) => m.id === partnerId);
 
-  // Get partner name from ID
-  getPartnerName(partnerId) {
-    const partners = {
-      "partner-1": "Alex Johnson",
-      "partner-2": "Sarah Chen",
-      "partner-3": "Mike Davis",
-      "user-2": "Alex Johnson",
-      "user-3": "Sarah Chen",
-      "user-4": "Mike Davis",
-    };
-    return partners[partnerId] || "Study Partner";
+    if (match) {
+      const responses = [
+        `That's a great point about ${match.course}! I was thinking the same thing.`,
+        `I can help with ${match.course}. Let me share my notes from ${match.university}.`,
+        `What time works best for you to study ${match.course}?`,
+        `I found this ${match.course} resource that might help us...`,
+        `Can you explain that ${match.course} concept again?`,
+        `I'm available tomorrow afternoon for ${match.course} study session.`,
+        `As a ${match.course} student at ${match.university}, I think we should focus on...`,
+      ];
+
+      const randomResponse =
+        responses[Math.floor(Math.random() * responses.length)];
+      this.receiveMessage(partnerId, match.name, randomResponse);
+    }
   }
 
   // Update conversation in the sidebar
@@ -234,10 +331,10 @@ class ChatService {
     if (existingConvIndex >= 0) {
       this.conversations[existingConvIndex].lastMessage = lastMessage;
       this.conversations[existingConvIndex].lastMessageTime = timestamp;
-      this.conversations[existingConvIndex].unreadCount =
-        this.currentChat === chatId
-          ? 0
-          : (this.conversations[existingConvIndex].unreadCount || 0) + 1;
+      if (this.currentChat !== chatId) {
+        this.conversations[existingConvIndex].unreadCount =
+          (this.conversations[existingConvIndex].unreadCount || 0) + 1;
+      }
     } else {
       this.conversations.unshift({
         id: chatId,
@@ -263,7 +360,7 @@ class ChatService {
         <div class="no-conversations">
           <i class="fas fa-comments"></i>
           <p>No conversations yet</p>
-          <p class="small">Start a chat with your study partners!</p>
+          <p class="small">Find study partners and start chatting!</p>
         </div>
       `;
     } else {
