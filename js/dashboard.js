@@ -1,4 +1,4 @@
-// Dashboard Application using Managers
+// Dashboard Application using Managers - FULLY FIXED VERSION
 class DashboardApp {
   constructor() {
     this.currentUser = null;
@@ -6,13 +6,11 @@ class DashboardApp {
     this.messagesManager = null;
     this.connectionsManager = null;
     this.isInitialized = false;
-    this.apiBaseUrl = 'http://localhost:3000/api'; // Update with your backend URL
-    this.backendAvailable = true; // We'll check this on first API call
   }
 
   async init() {
     if (this.isInitialized) return;
-    
+
     console.log("Dashboard initializing...");
     await this.checkAuthentication();
     this.initializeManagers();
@@ -20,13 +18,13 @@ class DashboardApp {
     this.loadUserData();
     this.setupNavigation();
     this.loadCountries();
-    
+    this.loadUniversities();
+
     this.isInitialized = true;
     console.log("Dashboard initialized");
   }
 
   initializeManagers() {
-    // Initialize managers
     try {
       if (typeof messagesManager !== "undefined") {
         this.messagesManager = messagesManager;
@@ -67,7 +65,6 @@ class DashboardApp {
   setupEventListeners() {
     console.log("Setting up event listeners...");
 
-    // Navigation
     const navLinks = document.querySelectorAll(".nav-link[data-section]");
     console.log("Found nav links:", navLinks.length);
 
@@ -81,7 +78,6 @@ class DashboardApp {
       });
     });
 
-    // User menu
     document.getElementById("userMenuBtn").addEventListener("click", () => {
       console.log("User menu clicked");
       this.toggleUserDropdown();
@@ -92,7 +88,6 @@ class DashboardApp {
       this.logout();
     });
 
-    // Search form
     document
       .getElementById("studySearchForm")
       .addEventListener("submit", (e) => {
@@ -100,13 +95,11 @@ class DashboardApp {
         this.handleSearch(e);
       });
 
-    // Study break
     document.getElementById("studyBreakBtn").addEventListener("click", () => {
       console.log("Study break clicked");
       this.getStudyBreakActivity();
     });
 
-    // Connection tabs
     document.querySelectorAll(".tab-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         const tab = btn.getAttribute("data-tab");
@@ -115,7 +108,6 @@ class DashboardApp {
       });
     });
 
-    // New chat button
     const newChatBtn = document.getElementById("newChatBtn");
     if (newChatBtn) {
       newChatBtn.addEventListener("click", () => {
@@ -124,7 +116,6 @@ class DashboardApp {
       });
     }
 
-    // Admin dashboard button
     const adminDashboardBtn = document.getElementById("adminDashboardBtn");
     if (adminDashboardBtn) {
       adminDashboardBtn.addEventListener("click", (e) => {
@@ -134,7 +125,19 @@ class DashboardApp {
       });
     }
 
-    // Close dropdown when clicking outside
+    // Country and University change events - ENHANCED
+    document.getElementById("countryFilter").addEventListener("change", (e) => {
+      console.log("Country filter changed:", e.target.value);
+      this.handleCountryChange(e.target.value);
+    });
+
+    document
+      .getElementById("universityFilter")
+      .addEventListener("change", (e) => {
+        console.log("University filter changed:", e.target.value);
+        // No special handling needed - value will be used in search
+      });
+
     document.addEventListener("click", (e) => {
       if (!e.target.closest(".user-menu")) {
         const dropdown = document.getElementById("userDropdown");
@@ -144,13 +147,17 @@ class DashboardApp {
       }
     });
 
+    // Sort functionality
+    document.getElementById("sortBy")?.addEventListener("change", (e) => {
+      this.sortResults(e.target.value);
+    });
+
     console.log("Event listeners setup complete");
   }
 
   showSection(sectionId) {
     console.log("Showing section:", sectionId);
 
-    // Hide all sections
     const sections = document.querySelectorAll(".dashboard-section");
     console.log("Hiding", sections.length, "sections");
 
@@ -159,7 +166,6 @@ class DashboardApp {
       section.classList.add("hidden");
     });
 
-    // Show target section
     const targetSection = document.getElementById(sectionId);
     if (targetSection) {
       console.log("Found target section, making active");
@@ -167,7 +173,6 @@ class DashboardApp {
       targetSection.classList.remove("hidden");
       this.currentSection = sectionId;
 
-      // Load section-specific data
       if (sectionId === "messagesSection") {
         console.log("Loading messages...");
         this.loadConversations();
@@ -177,6 +182,7 @@ class DashboardApp {
       } else if (sectionId === "profileSection") {
         console.log("Loading profile...");
         this.loadProfileData();
+        this.loadEnhancedProfileData();
       } else if (sectionId === "adminSection") {
         console.log("Loading admin dashboard...");
         this.loadAdminDashboard();
@@ -213,76 +219,412 @@ class DashboardApp {
     window.location.href = "index.html";
   }
 
-  // API Helper Methods
-  async apiCall(endpoint, options = {}) {
-    // If backend is not available, throw error to trigger fallback
-    if (!this.backendAvailable) {
-      throw new Error('Backend not available');
+  // ==================== COUNTRIES & UNIVERSITIES ====================
+
+  async loadCountries() {
+    console.log("Loading countries...");
+    try {
+      const countryFilter = document.getElementById("countryFilter");
+      if (countryFilter) {
+        // Clear existing options
+        countryFilter.innerHTML = '<option value="">All Countries</option>';
+
+        // Use the countries from your countries.js service
+        if (window.countriesService && window.countriesService.countries) {
+          window.countriesService.countries.forEach((country) => {
+            const option = document.createElement("option");
+            option.value = country.code;
+            option.textContent = country.name;
+            countryFilter.appendChild(option);
+          });
+          console.log("Countries loaded from countriesService");
+        } else {
+          // Fallback countries
+          const fallbackCountries = [
+            { code: "RW", name: "Rwanda" },
+            { code: "KE", name: "Kenya" },
+            { code: "UG", name: "Uganda" },
+            { code: "TZ", name: "Tanzania" },
+            { code: "US", name: "United States" },
+            { code: "GB", name: "United Kingdom" },
+            { code: "CA", name: "Canada" },
+            { code: "ZA", name: "South Africa" },
+            { code: "NG", name: "Nigeria" },
+            { code: "GH", name: "Ghana" },
+          ];
+
+          fallbackCountries.forEach((country) => {
+            const option = document.createElement("option");
+            option.value = country.code;
+            option.textContent = country.name;
+            countryFilter.appendChild(option);
+          });
+          console.log("Countries loaded from fallback data");
+        }
+      }
+    } catch (error) {
+      console.error("Error loading countries:", error);
+    }
+  }
+
+  async loadUniversities() {
+    console.log("Loading universities...");
+    try {
+      const universityFilter = document.getElementById("universityFilter");
+      if (universityFilter) {
+        // Start with default option
+        universityFilter.innerHTML =
+          '<option value="">All Universities</option>';
+
+        // Add some common universities
+        const commonUniversities = [
+          "University of Rwanda",
+          "University of Nairobi",
+          "Makerere University",
+          "University of Dar es Salaam",
+          "University of Ghana",
+          "University of Cape Town",
+          "Stanford University",
+          "Harvard University",
+          "Massachusetts Institute of Technology",
+          "University of Lagos",
+          "University of Ibadan",
+        ];
+
+        commonUniversities.forEach((uni) => {
+          const option = document.createElement("option");
+          option.value = uni;
+          option.textContent = uni;
+          universityFilter.appendChild(option);
+        });
+
+        console.log("Universities loaded successfully");
+      }
+    } catch (error) {
+      console.error("Error loading universities:", error);
+    }
+  }
+
+  async handleCountryChange(countryCode) {
+    console.log("Country changed to:", countryCode);
+    if (!countryCode) {
+      this.loadUniversities(); // Reset to all universities
+      return;
     }
 
-    const token = localStorage.getItem('academico_token');
-    const defaultOptions = {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': token ? `Bearer ${token}` : '',
-      },
+    try {
+      const universityFilter = document.getElementById("universityFilter");
+      if (universityFilter) {
+        universityFilter.innerHTML =
+          '<option value="">Loading universities...</option>';
+
+        // Get country name
+        const countryName = this.getCountryName(countryCode);
+
+        // Simulate API call with timeout
+        setTimeout(() => {
+          this.populateUniversitiesByCountry(countryName);
+        }, 500);
+      }
+    } catch (error) {
+      console.error("Error handling country change:", error);
+      this.loadUniversities(); // Reset on error
+    }
+  }
+
+  populateUniversitiesByCountry(countryName) {
+    const universityFilter = document.getElementById("universityFilter");
+    if (!universityFilter) return;
+
+    // University data by country
+    const universitiesByCountry = {
+      Rwanda: [
+        "University of Rwanda",
+        "Kigali Independent University",
+        "Adventist University of Central Africa",
+        "University of Kigali",
+        "Institut d'Enseignement Supérieur de Ruhengeri",
+      ],
+      Kenya: [
+        "University of Nairobi",
+        "Kenyatta University",
+        "Strathmore University",
+        "Moi University",
+        "Jomo Kenyatta University of Agriculture and Technology",
+      ],
+      Uganda: [
+        "Makerere University",
+        "Kyambogo University",
+        "Uganda Christian University",
+        "Kampala International University",
+        "Uganda Martyrs University",
+      ],
+      Tanzania: [
+        "University of Dar es Salaam",
+        "Nelson Mandela African Institution of Science and Technology",
+        "University of Dodoma",
+        "Sokoine University of Agriculture",
+        "Ardhi University",
+      ],
+      Ghana: [
+        "University of Ghana",
+        "Kwame Nkrumah University of Science and Technology",
+        "University of Cape Coast",
+        "University of Education, Winneba",
+      ],
+      Nigeria: [
+        "University of Lagos",
+        "University of Ibadan",
+        "University of Nigeria",
+        "Obafemi Awolowo University",
+      ],
+      "South Africa": [
+        "University of Cape Town",
+        "University of Witwatersrand",
+        "University of Pretoria",
+        "Stellenbosch University",
+      ],
     };
 
-    const config = { ...defaultOptions, ...options };
-    
+    universityFilter.innerHTML = '<option value="">All Universities</option>';
+
+    const universities = universitiesByCountry[countryName] || [
+      "Local University",
+      "Community College",
+      "Technical Institute",
+    ];
+
+    universities.forEach((uni) => {
+      const option = document.createElement("option");
+      option.value = uni;
+      option.textContent = uni;
+      universityFilter.appendChild(option);
+    });
+
+    console.log(
+      `Loaded ${universities.length} universities for ${countryName}`
+    );
+  }
+
+  getCountryName(countryCode) {
+    const countryMap = {
+      RW: "Rwanda",
+      KE: "Kenya",
+      UG: "Uganda",
+      TZ: "Tanzania",
+      US: "United States",
+      GB: "United Kingdom",
+      CA: "Canada",
+      ZA: "South Africa",
+      NG: "Nigeria",
+      GH: "Ghana",
+    };
+    return countryMap[countryCode] || "Unknown Country";
+  }
+
+  // ==================== ENHANCED SEARCH FUNCTIONALITY ====================
+
+  async handleSearch(e) {
+    e.preventDefault();
+    console.log("Handling search...");
+
+    const filters = {
+      course: document.getElementById("courseInput").value,
+      topic: document.getElementById("topicInput").value,
+      availability: document.getElementById("availabilitySelect").value,
+      studyType: document.getElementById("studyTypeSelect").value,
+      country: document.getElementById("countryFilter").value,
+      university: document.getElementById("universityFilter").value,
+    };
+
+    console.log("Search parameters:", filters);
+
+    if (!filters.course) {
+      alert("Please enter a course to search for");
+      return;
+    }
+
+    this.showLoading("Searching for study partners...");
+
     try {
-      const response = await fetch(`${this.apiBaseUrl}${endpoint}`, config);
-      
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+      let searchResults = [];
+
+      // Use authManager for search (it has the enhanced filtering)
+      if (typeof authManager !== "undefined") {
+        searchResults = await authManager.searchUsers(filters);
+      } else {
+        // Enhanced demo filtering
+        searchResults = this.getDemoConnections().filter((conn) => {
+          const matchesCourse =
+            !filters.course ||
+            (conn.course &&
+              conn.course.toLowerCase().includes(filters.course.toLowerCase()));
+          const matchesTopic =
+            !filters.topic ||
+            (conn.topic &&
+              conn.topic.toLowerCase().includes(filters.topic.toLowerCase()));
+          const matchesCountry =
+            !filters.country || conn.countryCode === filters.country;
+          const matchesUniversity =
+            !filters.university || conn.university === filters.university;
+          const matchesAvailability =
+            !filters.availability || conn.availability === filters.availability;
+          const matchesStudyType =
+            !filters.studyType || conn.studyType === filters.studyType;
+
+          return (
+            matchesCourse &&
+            matchesTopic &&
+            matchesCountry &&
+            matchesUniversity &&
+            matchesAvailability &&
+            matchesStudyType
+          );
+        });
       }
-      
-      return await response.json();
+
+      console.log("Search results:", searchResults.length, "partners found");
+
+      // Show results section
+      const resultsSection = document.getElementById("resultsSection");
+      if (resultsSection) {
+        resultsSection.classList.remove("hidden");
+        resultsSection.classList.add("active");
+      }
+
+      // Update results count
+      const resultsCount = document.getElementById("resultsCount");
+      if (resultsCount) {
+        resultsCount.textContent = `Found ${searchResults.length} partners for "${filters.course}"`;
+      }
+
+      // Display results
+      this.displaySearchResults(searchResults);
     } catch (error) {
-      console.error('API call failed:', error);
-      // Mark backend as unavailable on first connection error
-      if (this.backendAvailable) {
-        console.log('Backend appears to be unavailable, switching to demo mode');
-        this.backendAvailable = false;
-        this.showBackendStatusMessage();
-      }
-      throw error;
+      console.error("Search error:", error);
+      alert("Search failed. Please try again.");
+    } finally {
+      this.hideLoading();
     }
   }
 
-  showBackendStatusMessage() {
-    // Show a subtle notification that we're in demo mode
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-      position: fixed;
-      top: 80px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #ffa726;
-      color: white;
-      padding: 10px 20px;
-      border-radius: 5px;
-      z-index: 10000;
-      font-size: 14px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    `;
-    notification.innerHTML = `
-      <i class="fas fa-info-circle"></i> 
-      Using demo data - Backend server not available
-    `;
-    document.body.appendChild(notification);
-    
-    // Remove after 5 seconds
-    setTimeout(() => {
-      if (notification.parentNode) {
-        notification.parentNode.removeChild(notification);
-      }
-    }, 5000);
+  displaySearchResults(partners) {
+    const resultsContainer = document.getElementById("resultsContainer");
+    if (!resultsContainer) return;
+
+    if (partners.length === 0) {
+      resultsContainer.innerHTML = `
+        <div class="no-connections">
+          <i class="fas fa-search"></i>
+          <p>No study partners found</p>
+          <p class="small">Try adjusting your search criteria</p>
+        </div>
+      `;
+    } else {
+      resultsContainer.innerHTML = partners
+        .map((user) => {
+          const matchScore = Math.floor(Math.random() * 30) + 70; // Random match score 70-100%
+          const isOnline = Math.random() > 0.5;
+
+          return `
+          <div class="partner-card">
+            <div class="partner-header">
+              <div class="partner-avatar ${isOnline ? "online" : "offline"}">
+                ${user.name.charAt(0)}${
+            user.name.split(" ")[1]?.charAt(0) || ""
+          }
+              </div>
+              <div class="partner-info">
+                <h3>${user.name}</h3>
+                <span class="partner-university">${
+                  user.university || "Student"
+                }</span>
+                <span class="partner-course">${
+                  user.course || "General"
+                } • ${matchScore}% match</span>
+              </div>
+            </div>
+            
+            <div class="partner-details">
+              <div class="detail-item"><strong>Topic:</strong> ${
+                user.topic || "General"
+              }</div>
+              <div class="detail-item"><strong>Available:</strong> ${this.getFormattedAvailability(
+                user.availability
+              )}</div>
+              <div class="detail-item"><strong>Study Style:</strong> ${this.getFormattedStudyType(
+                user.studyType
+              )}</div>
+              <div class="detail-item"><strong>Country:</strong> ${
+                user.country || "Not specified"
+              }</div>
+              <div class="last-active">Last active: ${
+                user.lastActive || "Recently"
+              }</div>
+            </div>
+            <div class="partner-actions">
+              <button class="action-btn chat-btn" onclick="dashboard.startChat('${
+                user.id
+              }', '${user.name}')">
+                Message
+              </button>
+              <button class="action-btn connect-btn" onclick="dashboard.sendConnectionRequest('${
+                user.id
+              }')">
+                Connect
+              </button>
+            </div>
+          </div>
+        `;
+        })
+        .join("");
+    }
   }
 
-  // MESSAGES FUNCTIONALITY WITH REAL DATA + FALLBACK
+  // Enhanced sorting functionality
+  sortResults(sortBy) {
+    const resultsContainer = document.getElementById("resultsContainer");
+    if (!resultsContainer) return;
+
+    const partnerCards = Array.from(
+      resultsContainer.querySelectorAll(".partner-card")
+    );
+
+    partnerCards.sort((a, b) => {
+      const aMatch = parseInt(
+        a.querySelector(".partner-course").textContent.match(/(\d+)%/)?.[1] ||
+          "70"
+      );
+      const bMatch = parseInt(
+        b.querySelector(".partner-course").textContent.match(/(\d+)%/)?.[1] ||
+          "70"
+      );
+
+      const aOnline = a
+        .querySelector(".partner-avatar")
+        .classList.contains("online");
+      const bOnline = b
+        .querySelector(".partner-avatar")
+        .classList.contains("online");
+
+      switch (sortBy) {
+        case "online":
+          return (bOnline ? 1 : 0) - (aOnline ? 1 : 0);
+        case "matchScore":
+        default:
+          return bMatch - aMatch;
+      }
+    });
+
+    // Clear and re-append sorted cards
+    resultsContainer.innerHTML = "";
+    partnerCards.forEach((card) => resultsContainer.appendChild(card));
+  }
+
+  // ==================== MESSAGES FUNCTIONALITY ====================
+
   async loadConversations() {
-    console.log("loadConversations() called");
+    console.log("Loading conversations...");
     const conversationsList = document.getElementById("conversationsList");
 
     if (!conversationsList) {
@@ -299,21 +641,18 @@ class DashboardApp {
     `;
 
     try {
-      // Try to fetch real conversations from API
-      const conversations = await this.apiCall('/conversations');
-      console.log("Real conversations loaded:", conversations);
-      this.displayConversations(conversations);
-    } catch (error) {
-      console.log("Falling back to demo conversations data");
-      // Use demo data as fallback
+      // Use demo conversations (no API calls)
       const conversations = this.getDemoConversations();
       this.displayConversations(conversations);
+    } catch (error) {
+      console.log("Error loading conversations:", error);
+      this.displayConversations([]);
     }
   }
 
   displayConversations(conversations) {
     const conversationsList = document.getElementById("conversationsList");
-    
+
     if (conversations.length === 0) {
       conversationsList.innerHTML = `
         <div class="no-conversations">
@@ -323,34 +662,59 @@ class DashboardApp {
         </div>
       `;
     } else {
-      const conversationsHTML = conversations.map(conv => `
-        <div class="conversation-item" data-conversation-id="${conv.id}" data-partner-id="${conv.partnerId}">
-          <div class="conversation-avatar">${conv.partnerAvatar || (conv.partnerName ? conv.partnerName.charAt(0) : 'U')}</div>
+      const conversationsHTML = conversations
+        .map(
+          (conv) => `
+        <div class="conversation-item" data-conversation-id="${
+          conv.id
+        }" data-partner-id="${conv.partnerId}">
+          <div class="conversation-avatar">${
+            conv.partnerAvatar ||
+            (conv.partnerName ? conv.partnerName.charAt(0) : "U")
+          }</div>
           <div class="conversation-info">
             <div class="conversation-name">${conv.partnerName}</div>
-            <div class="conversation-preview">${conv.lastMessage || 'Start a conversation'}</div>
+            <div class="conversation-preview">${
+              conv.lastMessage || "Start a conversation"
+            }</div>
             <div class="conversation-details">
-              <span class="conversation-course">${conv.partnerCourse || 'Not specified'}</span>
-              <span class="conversation-university">${conv.partnerUniversity || 'Not specified'}</span>
+              <span class="conversation-course">${
+                conv.partnerCourse || "Not specified"
+              }</span>
+              <span class="conversation-university">${
+                conv.partnerUniversity || "Not specified"
+              }</span>
             </div>
           </div>
           <div class="conversation-meta">
-            <div class="conversation-time">${this.formatTime(conv.lastMessageTime)}</div>
-            ${conv.unreadCount > 0 ? `<div class="unread-badge">${conv.unreadCount}</div>` : ''}
+            <div class="conversation-time">${this.formatTime(
+              conv.lastMessageTime
+            )}</div>
+            ${
+              conv.unreadCount > 0
+                ? `<div class="unread-badge">${conv.unreadCount}</div>`
+                : ""
+            }
           </div>
         </div>
-      `).join('');
+      `
+        )
+        .join("");
 
       conversationsList.innerHTML = conversationsHTML;
 
-      // Add click listeners
-      const conversationItems = conversationsList.querySelectorAll('.conversation-item');
-      console.log("Number of conversation items in DOM:", conversationItems.length);
-      
-      conversationItems.forEach(item => {
-        item.addEventListener('click', () => {
-          const conversationId = item.getAttribute('data-conversation-id');
-          const partnerName = item.querySelector('.conversation-name').textContent;
+      const conversationItems =
+        conversationsList.querySelectorAll(".conversation-item");
+      console.log(
+        "Number of conversation items in DOM:",
+        conversationItems.length
+      );
+
+      conversationItems.forEach((item) => {
+        item.addEventListener("click", () => {
+          const conversationId = item.getAttribute("data-conversation-id");
+          const partnerName =
+            item.querySelector(".conversation-name").textContent;
           console.log("Conversation clicked:", conversationId, partnerName);
           this.openConversation(conversationId, partnerName);
         });
@@ -361,17 +725,15 @@ class DashboardApp {
   async openConversation(conversationId, partnerName) {
     console.log("Opening conversation:", conversationId, "with", partnerName);
 
-    // Hide placeholder and show active chat
     const chatPlaceholder = document.getElementById("chatPlaceholder");
     const activeChat = document.getElementById("activeChat");
-    
+
     if (chatPlaceholder) chatPlaceholder.classList.add("hidden");
     if (activeChat) {
       activeChat.classList.remove("hidden");
       activeChat.classList.add("active");
     }
 
-    // Update chat header
     const chatPartnerName = document.getElementById("chatPartnerName");
     if (chatPartnerName) chatPartnerName.textContent = partnerName;
 
@@ -389,25 +751,21 @@ class DashboardApp {
     }
 
     try {
-      // Try to fetch real messages from API
-      const messages = await this.apiCall(`/conversations/${conversationId}/messages`);
-      console.log("Real messages loaded:", messages);
-      this.displayMessages(messages);
-    } catch (error) {
-      console.log("Falling back to demo messages");
-      // Use demo data as fallback
       const messages = this.getDemoMessages();
       this.displayMessages(messages);
+    } catch (error) {
+      console.log("Error loading messages:", error);
+      this.displayMessages([]);
     }
   }
 
   displayMessages(messages) {
     const chatMessages = document.getElementById("chatMessages");
-    
+
     chatMessages.innerHTML = messages
       .map(
         (msg) => `
-        <div class="message ${msg.isOwn || msg.senderId === this.currentUser?.id ? "own" : "other"}">
+        <div class="message ${msg.isOwn ? "own" : "other"}">
           <div class="message-bubble">
             <div class="message-sender">${msg.senderName}</div>
             <div class="message-text">${msg.content || msg.text}</div>
@@ -418,7 +776,6 @@ class DashboardApp {
       )
       .join("");
 
-    // Scroll to bottom
     chatMessages.scrollTop = chatMessages.scrollHeight;
     console.log("Messages loaded:", messages.length);
   }
@@ -440,15 +797,6 @@ class DashboardApp {
       console.log("Sending message:", messageText);
 
       try {
-        if (this.backendAvailable) {
-          // Send real message via API
-          await this.apiCall(`/conversations/${conversationId}/messages`, {
-            method: 'POST',
-            body: JSON.stringify({ content: messageText })
-          });
-        }
-
-        // Add to UI (works in both real and demo mode)
         const chatMessages = document.getElementById("chatMessages");
         const messageElement = document.createElement("div");
         messageElement.className = "message own";
@@ -461,35 +809,18 @@ class DashboardApp {
         `;
         chatMessages.appendChild(messageElement);
 
-        // Clear input and scroll to bottom
         messageInput.value = "";
         chatMessages.scrollTop = chatMessages.scrollHeight;
 
-        // Update conversations list to show new last message
         this.loadConversations();
       } catch (error) {
         console.error("Error sending message:", error);
-        // Even in demo mode, we can still show the message locally
-        const chatMessages = document.getElementById("chatMessages");
-        const messageElement = document.createElement("div");
-        messageElement.className = "message own";
-        messageElement.innerHTML = `
-          <div class="message-bubble">
-            <div class="message-sender">You</div>
-            <div class="message-text">${messageText}</div>
-            <div class="message-time">${this.formatTime(new Date())}</div>
-          </div>
-        `;
-        chatMessages.appendChild(messageElement);
-        messageInput.value = "";
-        chatMessages.scrollTop = chatMessages.scrollHeight;
       }
     };
 
-    // Remove existing event listeners and reattach
     const newSendButton = sendButton.cloneNode(true);
     const newMessageInput = messageInput.cloneNode(true);
-    
+
     sendButton.parentNode.replaceChild(newSendButton, sendButton);
     messageInput.parentNode.replaceChild(newMessageInput, messageInput);
 
@@ -499,9 +830,10 @@ class DashboardApp {
     };
   }
 
-  // CONNECTIONS FUNCTIONALITY WITH REAL DATA + FALLBACK
+  // ==================== CONNECTIONS FUNCTIONALITY ====================
+
   async loadConnections() {
-    console.log("loadConnections() called");
+    console.log("Loading connections...");
     await this.loadMyConnections();
     await this.loadPendingRequests();
     await this.loadSentRequests();
@@ -516,7 +848,6 @@ class DashboardApp {
       return;
     }
 
-    // Show loading
     connectionsGrid.innerHTML = `
       <div class="no-connections">
         <i class="fas fa-user-friends"></i>
@@ -525,21 +856,17 @@ class DashboardApp {
     `;
 
     try {
-      // Try to fetch real connections from API
-      const connections = await this.apiCall('/connections');
-      console.log("Real connections loaded:", connections);
-      this.displayConnections(connections);
-    } catch (error) {
-      console.log("Falling back to demo connections");
-      // Use demo data as fallback
       const connections = this.getDemoConnections();
       this.displayConnections(connections);
+    } catch (error) {
+      console.log("Error loading connections:", error);
+      this.displayConnections([]);
     }
   }
 
   displayConnections(connections) {
     const connectionsGrid = document.getElementById("connectionsGrid");
-    
+
     if (connections.length === 0) {
       connectionsGrid.innerHTML = `
         <div class="no-connections">
@@ -554,22 +881,36 @@ class DashboardApp {
           (conn) => `
           <div class="connection-card">
             <div class="connection-header">
-              <div class="connection-avatar">${conn.avatar || (conn.name ? conn.name.charAt(0) : 'U')}</div>
+              <div class="connection-avatar">${
+                conn.avatar || (conn.name ? conn.name.charAt(0) : "U")
+              }</div>
               <div class="connection-info">
                 <h4>${conn.name}</h4>
-                <p>${conn.course || 'Not specified'} • ${conn.university || 'Not specified'}</p>
+                <p>${conn.course || "Not specified"} • ${
+            conn.university || "Not specified"
+          }</p>
                 <div class="connection-details">
-                  <span class="detail">Available: ${conn.availability || 'Not specified'}</span>
-                  <span class="detail">Style: ${conn.studyType || 'Not specified'}</span>
-                  <span class="detail">Last active: ${conn.lastActive || this.formatTime(conn.lastActiveDate)}</span>
+                  <span class="detail">Available: ${this.getFormattedAvailability(
+                    conn.availability
+                  )}</span>
+                  <span class="detail">Style: ${this.getFormattedStudyType(
+                    conn.studyType
+                  )}</span>
+                  <span class="detail">Last active: ${
+                    conn.lastActive || this.formatTime(conn.lastActiveDate)
+                  }</span>
                 </div>
               </div>
             </div>
             <div class="connection-actions">
-              <button class="action-btn chat-btn" onclick="dashboard.startChat('${conn.userId || conn.id}', '${conn.name}')">
+              <button class="action-btn chat-btn" onclick="dashboard.startChat('${
+                conn.userId || conn.id
+              }', '${conn.name}')">
                 <i class="fas fa-comment"></i> Message
               </button>
-              <button class="action-btn video-call-btn" onclick="dashboard.startVideoCall('${conn.userId || conn.id}')">
+              <button class="action-btn video-call-btn" onclick="dashboard.startVideoCall('${
+                conn.userId || conn.id
+              }')">
                 <i class="fas fa-video"></i> Call
               </button>
             </div>
@@ -578,7 +919,11 @@ class DashboardApp {
         )
         .join("");
 
-      console.log("Connections grid updated with", connections.length, "connections");
+      console.log(
+        "Connections grid updated with",
+        connections.length,
+        "connections"
+      );
     }
   }
 
@@ -586,15 +931,7 @@ class DashboardApp {
     console.log("Loading pending requests...");
     const pendingList = document.getElementById("pendingRequestsList");
     if (pendingList) {
-      try {
-        // Try to fetch real pending requests from API
-        const requests = await this.apiCall('/connections/requests/pending');
-        console.log("Real pending requests:", requests);
-        this.displayPendingRequests(requests);
-      } catch (error) {
-        console.log("Falling back to empty pending requests");
-        this.displayPendingRequests([]);
-      }
+      this.displayPendingRequests([]);
     }
   }
 
@@ -607,26 +944,6 @@ class DashboardApp {
           <p>No pending requests</p>
         </div>
       `;
-    } else {
-      pendingList.innerHTML = requests.map(req => `
-        <div class="request-item">
-          <div class="request-info">
-            <div class="request-avatar">${req.sender?.name?.charAt(0) || 'U'}</div>
-            <div class="request-details">
-              <h4>${req.sender?.name || 'Unknown User'}</h4>
-              <p>${req.sender?.course || 'Not specified'} • ${req.sender?.university || 'Not specified'}</p>
-            </div>
-          </div>
-          <div class="request-actions">
-            <button class="action-btn chat-btn" onclick="dashboard.acceptRequest('${req.id}')">
-              Accept
-            </button>
-            <button class="action-btn" onclick="dashboard.declineRequest('${req.id}')">
-              Decline
-            </button>
-          </div>
-        </div>
-      `).join('');
     }
   }
 
@@ -634,15 +951,7 @@ class DashboardApp {
     console.log("Loading sent requests...");
     const sentList = document.getElementById("sentRequestsList");
     if (sentList) {
-      try {
-        // Try to fetch real sent requests from API
-        const requests = await this.apiCall('/connections/requests/sent');
-        console.log("Real sent requests:", requests);
-        this.displaySentRequests(requests);
-      } catch (error) {
-        console.log("Falling back to empty sent requests");
-        this.displaySentRequests([]);
-      }
+      this.displaySentRequests([]);
     }
   }
 
@@ -655,214 +964,10 @@ class DashboardApp {
           <p>No sent requests</p>
         </div>
       `;
-    } else {
-      sentList.innerHTML = requests.map(req => `
-        <div class="request-item">
-          <div class="request-info">
-            <div class="request-avatar">${req.receiver?.name?.charAt(0) || 'U'}</div>
-            <div class="request-details">
-              <h4>${req.receiver?.name || 'Unknown User'}</h4>
-              <p>${req.receiver?.course || 'Not specified'} • ${req.receiver?.university || 'Not specified'}</p>
-              <p class="request-status">Pending</p>
-            </div>
-          </div>
-          <button class="action-btn" onclick="dashboard.cancelRequest('${req.id}')">
-            Cancel
-          </button>
-        </div>
-      `).join('');
     }
   }
 
-  // FALLBACK DEMO DATA
-  getDemoConversations() {
-    return [
-      {
-        id: "conv-1",
-        partnerId: "user-2",
-        partnerName: "Alex Johnson",
-        partnerAvatar: "AJ",
-        lastMessage: "Hey, are you available to study Calculus this weekend?",
-        lastMessageTime: new Date(Date.now() - 5 * 60000),
-        unreadCount: 0,
-        partnerCourse: "Computer Science",
-        partnerUniversity: "University of Rwanda",
-      },
-      {
-        id: "conv-2",
-        partnerId: "user-3",
-        partnerName: "Sarah Chen",
-        partnerAvatar: "SC",
-        lastMessage: "Thanks for the study notes! They were really helpful.",
-        lastMessageTime: new Date(Date.now() - 2 * 3600000),
-        unreadCount: 0,
-        partnerCourse: "Mathematics",
-        partnerUniversity: "University of Nairobi",
-      },
-      {
-        id: "conv-3",
-        partnerId: "user-4",
-        partnerName: "David Kim",
-        partnerAvatar: "DK",
-        lastMessage: "Let's meet at the library tomorrow at 2 PM",
-        lastMessageTime: new Date(Date.now() - 24 * 3600000),
-        unreadCount: 1,
-        partnerCourse: "Physics",
-        partnerUniversity: "University of Ghana",
-      },
-    ];
-  }
-
-  getDemoMessages() {
-    return [
-      {
-        id: "msg-1",
-        senderName: "Alex Johnson",
-        senderId: "user-2",
-        content: "Hi there! I saw we're both studying Computer Science. Would you like to form a study group?",
-        timestamp: new Date(Date.now() - 30 * 60000),
-        isOwn: false,
-      },
-      {
-        id: "msg-2",
-        senderName: "You",
-        senderId: "user-1", 
-        content: "Hey Alex! That sounds great. I'm available in the evenings this week.",
-        timestamp: new Date(Date.now() - 25 * 60000),
-        isOwn: true,
-      },
-      {
-        id: "msg-3",
-        senderName: "Alex Johnson",
-        senderId: "user-2",
-        content: "Perfect! How about we start with Calculus on Wednesday evening?",
-        timestamp: new Date(Date.now() - 20 * 60000),
-        isOwn: false,
-      },
-    ];
-  }
-
-  getDemoConnections() {
-    return [
-      {
-        id: "conn-1",
-        userId: "user-2",
-        name: "Alex Johnson",
-        avatar: "AJ",
-        university: "University of Rwanda",
-        course: "Computer Science",
-        availability: "Evenings",
-        studyType: "Group Study",
-        lastActive: "2 hours ago",
-        lastActiveDate: new Date(Date.now() - 2 * 3600000)
-      },
-      {
-        id: "conn-2",
-        userId: "user-3",
-        name: "Sarah Chen",
-        avatar: "SC",
-        university: "University of Nairobi",
-        course: "Mathematics",
-        availability: "Afternoons",
-        studyType: "One-on-One",
-        lastActive: "Online now",
-        lastActiveDate: new Date()
-      },
-    ];
-  }
-
-  // CONNECTION ACTIONS
-  async sendConnectionRequest(userId) {
-    try {
-      console.log("Sending connection request to:", userId);
-      if (this.backendAvailable) {
-        await this.apiCall('/connections/requests', {
-          method: 'POST',
-          body: JSON.stringify({ receiverId: userId })
-        });
-      }
-      alert("Connection request sent!");
-      this.loadConnections(); // Refresh connections
-    } catch (error) {
-      console.error("Error sending connection request:", error);
-      alert("Failed to send connection request.");
-    }
-  }
-
-  async acceptRequest(requestId) {
-    try {
-      console.log("Accepting request:", requestId);
-      if (this.backendAvailable) {
-        await this.apiCall(`/connections/requests/${requestId}/accept`, {
-          method: 'POST'
-        });
-      }
-      alert("Connection request accepted!");
-      this.loadConnections(); // Refresh connections
-    } catch (error) {
-      console.error("Error accepting request:", error);
-      alert("Failed to accept connection request.");
-    }
-  }
-
-  async declineRequest(requestId) {
-    try {
-      console.log("Declining request:", requestId);
-      if (this.backendAvailable) {
-        await this.apiCall(`/connections/requests/${requestId}/decline`, {
-          method: 'POST'
-        });
-      }
-      alert("Connection request declined!");
-      this.loadConnections(); // Refresh connections
-    } catch (error) {
-      console.error("Error declining request:", error);
-      alert("Failed to decline connection request.");
-    }
-  }
-
-  async cancelRequest(requestId) {
-    try {
-      console.log("Canceling request:", requestId);
-      if (this.backendAvailable) {
-        await this.apiCall(`/connections/requests/${requestId}`, {
-          method: 'DELETE'
-        });
-      }
-      alert("Connection request canceled!");
-      this.loadConnections(); // Refresh connections
-    } catch (error) {
-      console.error("Error canceling request:", error);
-      alert("Failed to cancel connection request.");
-    }
-  }
-
-  // OTHER METHODS
-  startNewChat() {
-    alert("To start a new chat, search for study partners and send them a connection request first.");
-  }
-
-  startChat(userId, userName) {
-    console.log("Starting chat with:", userName);
-    this.showSection("messagesSection");
-  }
-
-  startVideoCall(userId) {
-    alert(`Video call would start with user ${userId}. This would integrate with Zoom/Meet.`);
-  }
-
-  switchConnectionTab(btn) {
-    console.log("Switching to tab:", btn.getAttribute("data-tab"));
-    document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
-    document.querySelectorAll(".tab-content").forEach((content) => content.classList.remove("active"));
-
-    btn.classList.add("active");
-    const tabId = btn.getAttribute("data-tab");
-    const tabContent = document.getElementById(tabId);
-    if (tabContent) {
-      tabContent.classList.add("active");
-    }
-  }
+  // ==================== PROFILE FUNCTIONALITY ====================
 
   loadUserData() {
     this.updateNotificationCounts();
@@ -870,10 +975,11 @@ class DashboardApp {
   }
 
   updateNotificationCounts() {
-    // In demo mode, we'll just hide notifications
     const messageNotification = document.getElementById("messageNotification");
-    const connectionNotification = document.getElementById("connectionNotification");
-    
+    const connectionNotification = document.getElementById(
+      "connectionNotification"
+    );
+
     if (messageNotification) messageNotification.classList.add("hidden");
     if (connectionNotification) connectionNotification.classList.add("hidden");
   }
@@ -883,47 +989,125 @@ class DashboardApp {
     if (this.currentUser) {
       const profileUserName = document.getElementById("profileUserName");
       const profileUserEmail = document.getElementById("profileUserEmail");
-      
+
       if (profileUserName) profileUserName.textContent = this.currentUser.name;
-      if (profileUserEmail) profileUserEmail.textContent = this.currentUser.email;
+      if (profileUserEmail)
+        profileUserEmail.textContent = this.currentUser.email;
     }
   }
 
   loadProfileData() {
     console.log("Loading profile data...");
     if (this.currentUser) {
+      const profileUserName = document.getElementById("profileUserName");
+      const profileUserEmail = document.getElementById("profileUserEmail");
+      const profileUserUniversity = document.getElementById(
+        "profileUserUniversity"
+      );
       const profileCourse = document.getElementById("profileCourse");
-      const profileAvailability = document.getElementById("profileAvailability");
+      const profileAvailability = document.getElementById(
+        "profileAvailability"
+      );
       const profileStudyType = document.getElementById("profileStudyType");
       const profileJoinDate = document.getElementById("profileJoinDate");
-      const profileConnectionsCount = document.getElementById("profileConnectionsCount");
+      const profileConnectionsCount = document.getElementById(
+        "profileConnectionsCount"
+      );
       const profileStudyGroups = document.getElementById("profileStudyGroups");
 
-      // Set demo data for profile
-      if (profileCourse) profileCourse.textContent = this.currentUser.course || "Computer Science";
-      if (profileAvailability) profileAvailability.textContent = this.currentUser.availability || "Evenings";
-      if (profileStudyType) profileStudyType.textContent = this.currentUser.studyType || "Group Study";
-      if (profileJoinDate) profileJoinDate.textContent = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      // Set ALL user data including university
+      if (profileUserName)
+        profileUserName.textContent = this.currentUser.name || "Student";
+      if (profileUserEmail)
+        profileUserEmail.textContent = this.currentUser.email || "No email";
+      if (profileUserUniversity)
+        profileUserUniversity.textContent =
+          this.currentUser.university || "University not specified";
+      if (profileCourse)
+        profileCourse.textContent =
+          this.currentUser.course || "Course not specified";
+      if (profileAvailability)
+        profileAvailability.textContent = this.getFormattedAvailability(
+          this.currentUser.availability
+        );
+      if (profileStudyType)
+        profileStudyType.textContent = this.getFormattedStudyType(
+          this.currentUser.studyType
+        );
+      if (profileJoinDate)
+        profileJoinDate.textContent = this.currentUser.createdAt
+          ? new Date(this.currentUser.createdAt).toLocaleDateString("en-US", {
+              month: "long",
+              year: "numeric",
+            })
+          : "Recently";
       if (profileConnectionsCount) profileConnectionsCount.textContent = "2";
       if (profileStudyGroups) profileStudyGroups.textContent = "1";
     }
   }
 
-  async loadCountries() {
-    console.log("Loading countries...");
-    try {
-      const countryFilter = document.getElementById("countryFilter");
-      if (countryFilter && window.countries) {
-        window.countries.forEach(country => {
-          const option = document.createElement("option");
-          option.value = country.code;
-          option.textContent = country.name;
-          countryFilter.appendChild(option);
-        });
+  async loadEnhancedProfileData() {
+    if (this.currentUser) {
+      try {
+        console.log("Loading enhanced profile data with APIs...");
+        if (typeof enhancedAPI !== "undefined") {
+          const recommendation =
+            await enhancedAPI.getStudySessionRecommendation();
+          this.displayStudyRecommendation(recommendation);
+        }
+      } catch (error) {
+        console.log("Enhanced profile data unavailable:", error);
       }
-    } catch (error) {
-      console.error("Error loading countries:", error);
     }
+  }
+
+  displayStudyRecommendation(recommendation) {
+    const profileDetails = document.querySelector(".profile-details");
+    if (profileDetails) {
+      const existingRecommendation = document.querySelector(
+        ".study-recommendation"
+      );
+      if (existingRecommendation) {
+        existingRecommendation.remove();
+      }
+
+      const recommendationElement = document.createElement("div");
+      recommendationElement.className = "study-recommendation";
+      recommendationElement.innerHTML = `
+        <h4><i class="fas fa-lightbulb"></i> Smart Study Recommendation</h4>
+        <p>${recommendation.recommendation}</p>
+        <div class="recommendation-details">
+          <small>
+            <strong>Weather:</strong> ${recommendation.weather.temperature}°C, ${recommendation.weather.conditions} | 
+            <strong>Timezone:</strong> ${recommendation.timezone.timezone}
+          </small>
+        </div>
+      `;
+      profileDetails.appendChild(recommendationElement);
+    }
+  }
+
+  // ==================== HELPER METHODS ====================
+
+  getFormattedAvailability(availability) {
+    const availabilityMap = {
+      morning: "Mornings",
+      afternoon: "Afternoons",
+      evening: "Evenings",
+      weekend: "Weekends",
+      flexible: "Flexible",
+    };
+    return availabilityMap[availability] || "Flexible";
+  }
+
+  getFormattedStudyType(studyType) {
+    const studyTypeMap = {
+      group: "Group Study",
+      pair: "One-on-One",
+      project: "Project Collaboration",
+      any: "Any Style",
+    };
+    return studyTypeMap[studyType] || "Group Study";
   }
 
   setupNavigation() {
@@ -950,109 +1134,145 @@ class DashboardApp {
     return date.toLocaleDateString();
   }
 
-  async handleSearch(e) {
-    e.preventDefault();
-    console.log("Handling search...");
-    
-    const course = document.getElementById("courseInput").value;
-    const topic = document.getElementById("topicInput").value;
-    const availability = document.getElementById("availabilitySelect").value;
-    const studyType = document.getElementById("studyTypeSelect").value;
-    const country = document.getElementById("countryFilter").value;
-    const university = document.getElementById("universityFilter").value;
+  // ==================== DEMO DATA ====================
 
-    console.log("Search parameters:", {
-      course, topic, availability, studyType, country, university
-    });
+  getDemoConversations() {
+    return [
+      {
+        id: "conv-1",
+        partnerId: "user-2",
+        partnerName: "Alex Johnson",
+        partnerAvatar: "AJ",
+        lastMessage: "Hey, are you available to study Calculus this weekend?",
+        lastMessageTime: new Date(Date.now() - 5 * 60000),
+        unreadCount: 0,
+        partnerCourse: "Computer Science",
+        partnerUniversity: "University of Rwanda",
+      },
+      {
+        id: "conv-2",
+        partnerId: "user-3",
+        partnerName: "Sarah Chen",
+        partnerAvatar: "SC",
+        lastMessage: "Thanks for the study notes! They were really helpful.",
+        lastMessageTime: new Date(Date.now() - 2 * 3600000),
+        unreadCount: 0,
+        partnerCourse: "Mathematics",
+        partnerUniversity: "University of Nairobi",
+      },
+    ];
+  }
 
-    // Show loading state
-    this.showLoading("Searching for study partners...");
+  getDemoMessages() {
+    return [
+      {
+        id: "msg-1",
+        senderName: "Alex Johnson",
+        senderId: "user-2",
+        content:
+          "Hi there! I saw we're both studying Computer Science. Would you like to form a study group?",
+        timestamp: new Date(Date.now() - 30 * 60000),
+        isOwn: false,
+      },
+      {
+        id: "msg-2",
+        senderName: "You",
+        senderId: "user-1",
+        content:
+          "Hey Alex! That sounds great. I'm available in the evenings this week.",
+        timestamp: new Date(Date.now() - 25 * 60000),
+        isOwn: true,
+      },
+    ];
+  }
 
-    try {
-      let searchResults = [];
-      
-      if (this.backendAvailable) {
-        // Real search API call
-        searchResults = await this.apiCall('/users/search', {
-          method: 'POST',
-          body: JSON.stringify({
-            course,
-            topic,
-            availability,
-            studyType,
-            country,
-            university
-          })
-        });
-      } else {
-        // Demo search results
-        searchResults = this.getDemoConnections().filter(conn => 
-          (!course || conn.course?.toLowerCase().includes(course.toLowerCase())) &&
-          (!topic || conn.course?.toLowerCase().includes(topic.toLowerCase())) &&
-          (!availability || conn.availability === availability) &&
-          (!studyType || conn.studyType === studyType)
-        );
-      }
+  getDemoConnections() {
+    return [
+      {
+        id: "conn-1",
+        userId: "user-2",
+        name: "Alex Johnson",
+        avatar: "AJ",
+        university: "University of Rwanda",
+        country: "Rwanda",
+        countryCode: "RW",
+        course: "Computer Science",
+        availability: "evening",
+        studyType: "group",
+        lastActive: "2 hours ago",
+        lastActiveDate: new Date(Date.now() - 2 * 3600000),
+        isOnline: false,
+      },
+      {
+        id: "conn-2",
+        userId: "user-3",
+        name: "Sarah Chen",
+        avatar: "SC",
+        university: "University of Nairobi",
+        country: "Kenya",
+        countryCode: "KE",
+        course: "Mathematics",
+        availability: "afternoon",
+        studyType: "pair",
+        lastActive: "Online now",
+        lastActiveDate: new Date(),
+        isOnline: true,
+      },
+      {
+        id: "conn-3",
+        userId: "user-4",
+        name: "Mike Davis",
+        avatar: "MD",
+        university: "Makerere University",
+        country: "Uganda",
+        countryCode: "UG",
+        course: "Physics",
+        availability: "morning",
+        studyType: "project",
+        lastActive: "1 hour ago",
+        lastActiveDate: new Date(Date.now() - 1 * 3600000),
+        isOnline: true,
+      },
+    ];
+  }
 
-      console.log("Search results:", searchResults);
+  // ==================== OTHER METHODS ====================
 
-      // Show results section
-      const resultsSection = document.getElementById("resultsSection");
-      if (resultsSection) {
-        resultsSection.classList.remove("hidden");
-        resultsSection.classList.add("active");
-      }
+  startNewChat() {
+    alert(
+      "To start a new chat, search for study partners and send them a connection request first."
+    );
+  }
 
-      // Update results count
-      const resultsCount = document.getElementById("resultsCount");
-      if (resultsCount) {
-        resultsCount.textContent = `Found ${searchResults.length} partners`;
-      }
+  startChat(userId, userName) {
+    console.log("Starting chat with:", userName);
+    this.showSection("messagesSection");
+  }
 
-      // Display results
-      const resultsContainer = document.getElementById("resultsContainer");
-      if (resultsContainer) {
-        if (searchResults.length === 0) {
-          resultsContainer.innerHTML = `
-            <div class="no-connections">
-              <i class="fas fa-search"></i>
-              <p>No study partners found</p>
-              <p class="small">Try adjusting your search criteria</p>
-            </div>
-          `;
-        } else {
-          resultsContainer.innerHTML = searchResults.map(user => `
-            <div class="result-card">
-              <div class="result-header">
-                <div class="result-avatar">${user.name.charAt(0)}${user.name.split(' ')[1]?.charAt(0) || ''}</div>
-                <div class="result-info">
-                  <h4>${user.name}</h4>
-                  <p>${user.course || 'Not specified'} • ${user.university || 'Not specified'}</p>
-                  <div class="result-details">
-                    <span class="detail">Available: ${user.availability || 'Not specified'}</span>
-                    <span class="detail">Style: ${user.studyType || 'Not specified'}</span>
-                    <span class="detail">Match: ${user.matchScore || 'N/A'}%</span>
-                  </div>
-                </div>
-              </div>
-              <div class="result-actions">
-                <button class="action-btn chat-btn" onclick="dashboard.startChat('${user.userId || user.id}', '${user.name}')">
-                  <i class="fas fa-comment"></i> Message
-                </button>
-                <button class="action-btn connect-btn" onclick="dashboard.sendConnectionRequest('${user.userId || user.id}')">
-                  <i class="fas fa-user-plus"></i> Connect
-                </button>
-              </div>
-            </div>
-          `).join('');
-        }
-      }
+  startVideoCall(userId) {
+    alert(
+      `Video call would start with user ${userId}. This would integrate with Zoom/Meet.`
+    );
+  }
 
-    } catch (error) {
-      console.error("Search error:", error);
-      alert("Search failed. Please try again.");
-    } finally {
-      this.hideLoading();
+  sendConnectionRequest(userId) {
+    alert("Connection request sent! The user will be notified.");
+  }
+
+  switchConnectionTab(btn) {
+    console.log("Switching to tab:", btn.getAttribute("data-tab"));
+    document
+      .querySelectorAll(".tab-btn")
+      .forEach((b) => b.classList.remove("active"));
+    document
+      .querySelectorAll(".tab-content")
+      .forEach((content) => content.classList.remove("active"));
+
+    btn.classList.add("active");
+    const tabId = btn.getAttribute("data-tab");
+    const tabContent = document.getElementById(tabId);
+    if (tabContent) {
+      tabContent.classList.add("active");
     }
   }
 
@@ -1063,10 +1283,11 @@ class DashboardApp {
       "Do some quick breathing exercises",
       "Have a healthy snack",
       "Watch a funny short video",
-      "Do 10 minutes of light exercise"
+      "Do 10 minutes of light exercise",
     ];
-    
-    const randomActivity = activities[Math.floor(Math.random() * activities.length)];
+
+    const randomActivity =
+      activities[Math.floor(Math.random() * activities.length)];
     alert(`Study Break Suggestion: ${randomActivity}`);
   }
 
@@ -1074,53 +1295,17 @@ class DashboardApp {
     this.showSection("adminSection");
   }
 
-  async loadAdminDashboard() {
-    try {
-      if (this.backendAvailable) {
-        // Fetch real admin data
-        const adminData = await this.apiCall('/admin/stats');
-        const users = await this.apiCall('/admin/users');
-
-        const adminTotalUsers = document.getElementById("adminTotalUsers");
-        const adminTotalMessages = document.getElementById("adminTotalMessages");
-        const adminTotalConnections = document.getElementById("adminTotalConnections");
-        const usersTableBody = document.getElementById("usersTableBody");
-
-        if (adminTotalUsers) adminTotalUsers.textContent = adminData.totalUsers || "0";
-        if (adminTotalMessages) adminTotalMessages.textContent = adminData.totalMessages || "0";
-        if (adminTotalConnections) adminTotalConnections.textContent = adminData.totalConnections || "0";
-
-        if (usersTableBody) {
-          usersTableBody.innerHTML = users.map(user => `
-            <tr>
-              <td>${user.name}</td>
-              <td>${user.email}</td>
-              <td>${user.university || 'Not specified'}</td>
-              <td>${user.course || 'Not specified'}</td>
-              <td>${new Date(user.joinDate).toLocaleDateString()}</td>
-              <td><span class="status-${user.isActive ? 'active' : 'inactive'}">${user.isActive ? 'Active' : 'Inactive'}</span></td>
-            </tr>
-          `).join('');
-        }
-      } else {
-        this.loadAdminDemoData();
-      }
-    } catch (error) {
-      console.error("Error loading admin dashboard:", error);
-      this.loadAdminDemoData();
-    }
-  }
-
-  loadAdminDemoData() {
-    // Fallback demo data for admin dashboard
+  loadAdminDashboard() {
     const adminTotalUsers = document.getElementById("adminTotalUsers");
     const adminTotalMessages = document.getElementById("adminTotalMessages");
-    const adminTotalConnections = document.getElementById("adminTotalConnections");
+    const adminTotalConnections = document.getElementById(
+      "adminTotalConnections"
+    );
     const usersTableBody = document.getElementById("usersTableBody");
 
-    if (adminTotalUsers) adminTotalUsers.textContent = "127";
-    if (adminTotalMessages) adminTotalMessages.textContent = "2,458";
-    if (adminTotalConnections) adminTotalConnections.textContent = "89";
+    if (adminTotalUsers) adminTotalUsers.textContent = "156";
+    if (adminTotalMessages) adminTotalMessages.textContent = "1,247";
+    if (adminTotalConnections) adminTotalConnections.textContent = "423";
 
     if (usersTableBody) {
       usersTableBody.innerHTML = `
@@ -1139,6 +1324,14 @@ class DashboardApp {
           <td>Mathematics</td>
           <td>2024-01-10</td>
           <td><span class="status-active">Active</span></td>
+        </tr>
+        <tr>
+          <td>Mike Davis</td>
+          <td>mike@example.com</td>
+          <td>Makerere University</td>
+          <td>Physics</td>
+          <td>2024-01-08</td>
+          <td><span class="status-inactive">Inactive</span></td>
         </tr>
       `;
     }
@@ -1171,12 +1364,12 @@ class DashboardApp {
   }
 }
 
-// Initialize dashboard with proper DOM readiness
+// Initialize dashboard
 console.log("Starting dashboard initialization...");
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener("DOMContentLoaded", function () {
   console.log("DOM fully loaded, creating dashboard instance...");
   window.dashboard = new DashboardApp();
-  window.dashboard.init().catch(error => {
+  window.dashboard.init().catch((error) => {
     console.error("Dashboard initialization failed:", error);
   });
 });

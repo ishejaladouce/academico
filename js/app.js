@@ -13,6 +13,7 @@ class AcademicOApp {
     this.checkExistingSession();
     this.loadCountriesOnStart();
     this.setupDemoData();
+    this.initializeEnhancedAPIs();
 
     console.log("AcademicO Started with Full Functionality!");
   }
@@ -108,6 +109,7 @@ class AcademicOApp {
 
   // ==================== AUTHENTICATION ====================
 
+  // Registration form
   async handleRegister(e) {
     e.preventDefault();
     this.showLoading("Creating your account...");
@@ -130,18 +132,7 @@ class AcademicOApp {
       return;
     }
 
-    const userData = {
-      name: document.getElementById("regFullName").value,
-      email: document.getElementById("regEmail").value,
-      country: countrySelect.options[countrySelect.selectedIndex].text,
-      countryCode: countrySelect.value,
-      university: universityValue,
-      course: document.getElementById("regCourse").value,
-      availability: document.getElementById("regAvailability").value,
-      studyType: document.getElementById("regStudyType").value,
-      topic: document.getElementById("regCourse").value + " General",
-    };
-
+    // GET THE PASSWORD VALUES
     const password = document.getElementById("regPassword").value;
     const confirmPassword = document.getElementById("regConfirmPassword").value;
 
@@ -150,6 +141,19 @@ class AcademicOApp {
       this.hideLoading();
       return;
     }
+
+    const userData = {
+      name: document.getElementById("regFullName").value,
+      email: document.getElementById("regEmail").value,
+      password: password, // ADD THIS LINE - PASS THE PASSWORD
+      country: countrySelect.options[countrySelect.selectedIndex].text,
+      countryCode: countrySelect.value,
+      university: universityValue,
+      course: document.getElementById("regCourse").value,
+      availability: document.getElementById("regAvailability").value,
+      studyType: document.getElementById("regStudyType").value,
+      topic: document.getElementById("regCourse").value + " General",
+    };
 
     try {
       const userId = await authManager.registerUser(userData);
@@ -924,6 +928,150 @@ class AcademicOApp {
   setupDemoData() {
     // Initialize demo data for testing
     console.log("Demo data initialized for testing");
+  }
+
+  // ==================== ENHANCED API INTEGRATION ====================
+
+  async initializeEnhancedAPIs() {
+    console.log("Initializing enhanced APIs...");
+
+    try {
+      // Load multiple APIs simultaneously for better performance
+      const [timezoneData, weatherData, quoteData] = await Promise.all([
+        enhancedAPI.getEnhancedTimezoneData(),
+        enhancedAPI.getStudyWeather(),
+        enhancedAPI.getStudyQuote(),
+      ]);
+
+      this.displayAPIFeatures(timezoneData, weatherData, quoteData);
+      this.updateAPIStats();
+    } catch (error) {
+      console.log("Enhanced APIs initialization failed, using fallbacks");
+      this.displayFallbackFeatures();
+    }
+  }
+
+  displayAPIFeatures(timezoneData, weatherData, quoteData) {
+    // Display timezone compatibility info
+    this.displayTimezoneInfo(timezoneData);
+
+    // Display weather-based study suggestion
+    this.displayWeatherSuggestion(weatherData);
+
+    // Display motivational quote
+    this.displayStudyQuote(quoteData);
+
+    // Show API status
+    this.showAPIStatus();
+  }
+
+  displayTimezoneInfo(timezoneData) {
+    const timezoneElement = document.createElement("div");
+    timezoneElement.className = "api-feature timezone-info";
+    timezoneElement.innerHTML = `
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-globe-americas"></i></div>
+            <h4>Timezone Smart Matching</h4>
+            <p>Your timezone: <strong>${timezoneData.timezone}</strong></p>
+            <p>We'll find partners in compatible time zones for better study sessions</p>
+            <small>Powered by ${timezoneData.source}</small>
+        </div>
+    `;
+
+    const featuresGrid = document.querySelector(".features-grid");
+    if (featuresGrid) {
+      featuresGrid.appendChild(timezoneElement);
+    }
+  }
+
+  displayWeatherSuggestion(weatherData) {
+    const weatherElement = document.createElement("div");
+    weatherElement.className = "api-feature weather-suggestion";
+    weatherElement.innerHTML = `
+        <div class="feature-card">
+            <div class="feature-icon"><i class="fas fa-cloud-sun"></i></div>
+            <h4>Study Environment</h4>
+            <p>${weatherData.city}: ${weatherData.temperature}°C, ${weatherData.conditions}</p>
+            <p><strong>Tip:</strong> ${weatherData.studySuggestion}</p>
+            <small>Powered by ${weatherData.source}</small>
+        </div>
+    `;
+
+    const featuresGrid = document.querySelector(".features-grid");
+    if (featuresGrid) {
+      featuresGrid.appendChild(weatherElement);
+    }
+  }
+
+  displayStudyQuote(quoteData) {
+    // Add quote to study tip section
+    const studyTip = document.getElementById("studyTip");
+    if (studyTip) {
+      studyTip.innerHTML += `
+            <div class="motivational-quote">
+                <i class="fas fa-quote-left"></i>
+                "${quoteData.quote}"
+                <div class="quote-author">- ${quoteData.author}</div>
+                <small>Via ${quoteData.source}</small>
+            </div>
+        `;
+    }
+  }
+
+  showAPIStatus() {
+    const apiStats = enhancedAPI.getAPIStats();
+    console.log("API Usage Statistics:", apiStats);
+
+    // You can display this in admin panel or console for verification
+    if (typeof adminDashboard !== "undefined") {
+      // This will be visible in admin dashboard
+      window.apiStats = apiStats;
+    }
+  }
+
+  displayFallbackFeatures() {
+    console.log("Displaying fallback features");
+    // Fallback content when APIs are unavailable
+    const featuresGrid = document.querySelector(".features-grid");
+    if (featuresGrid) {
+      featuresGrid.innerHTML += `
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-wifi"></i></div>
+                <h4>Smart Time Matching</h4>
+                <p>Find study partners in compatible time zones</p>
+                <small>Basic timezone matching active</small>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-graduation-cap"></i></div>
+                <h4>Study Optimization</h4>
+                <p>Get personalized study recommendations</p>
+                <small>Local recommendations active</small>
+            </div>
+        `;
+    }
+  }
+
+  updateAPIStats() {
+    // Update statistics with API data
+    const stats = enhancedAPI.getAPIStats();
+    const apiStatsElement = document.getElementById("apiStats");
+
+    if (!apiStatsElement) {
+      // Create API stats element if it doesn't exist
+      const statsContainer = document.querySelector(".stats-container");
+      if (statsContainer) {
+        const apiStatElement = document.createElement("div");
+        apiStatElement.className = "stat";
+        apiStatElement.id = "apiStats";
+        apiStatElement.innerHTML = `
+                <span class="stat-number">${stats.activeAPIs}/${stats.totalAPIs}</span>
+                <span class="stat-label">
+                    <i class="fas fa-plug"></i> APIs Active
+                </span>
+            `;
+        statsContainer.appendChild(apiStatElement);
+      }
+    }
   }
 }
 

@@ -1325,6 +1325,101 @@ body {
   background: #34495e !important;
 }
 
+/* Enhanced API Features Styling */
+.api-feature {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.motivational-quote {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 15px 0;
+    text-align: center;
+    position: relative;
+}
+
+.motivational-quote .fa-quote-left {
+    font-size: 24px;
+    opacity: 0.7;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.quote-author {
+    font-style: italic;
+    margin-top: 10px;
+    opacity: 0.9;
+}
+
+.feature-card small {
+    display: block;
+    margin-top: 8px;
+    font-size: 11px;
+    opacity: 0.7;
+    font-style: italic;
+}
+
+/* API Status Indicators */
+.api-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-left: 10px;
+}
+
+.api-status.active {
+    background: #e8f5e8;
+    color: #2d5a2d;
+}
+
+.api-status.inactive {
+    background: #ffebee;
+    color: #c53030;
+}
+
+.api-status.unknown {
+    background: #fff3e0;
+    color: #dd6b20;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Study Recommendation Card */
+.study-recommendation {
+    background: white;
+    border-left: 4px solid #4a90e2;
+    padding: 15px;
+    margin: 15px 0;
+    border-radius: 0 8px 8px 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.study-recommendation h4 {
+    color: #2c3e50;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.study-recommendation h4 i {
+    color: #4a90e2;
+}
+
 /* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 768px) {
     .container {
