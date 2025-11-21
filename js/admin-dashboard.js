@@ -7,6 +7,7 @@ class AdminDashboard {
       totalMessages: 0,
       totalConnections: 0,
       newUsersToday: 0,
+      totalGroups: 0,
       pendingReports: 0,
     };
     this.db = null;
@@ -59,40 +60,94 @@ class AdminDashboard {
 
   setupAdminEventListeners() {
     // Admin logout
-    document.getElementById("adminLogoutBtn")?.addEventListener("click", () => {
-      adminAuth.adminLogout();
-    });
+    const adminLogoutBtn = document.getElementById("adminLogoutBtn");
+    if (adminLogoutBtn) {
+      adminLogoutBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (confirm("Are you sure you want to logout?")) {
+          if (typeof adminAuth !== "undefined" && adminAuth.adminLogout) {
+            adminAuth.adminLogout();
+          } else {
+            localStorage.removeItem("academico_admin_user");
+            window.location.href = "index.html";
+          }
+        }
+      });
+    }
 
-    // Admin navigation
-    document.querySelectorAll(".admin-nav-link").forEach((link) => {
+    // Admin navigation - using nav-link class like user dashboard
+    document.querySelectorAll(".nav-link[data-section]").forEach((link) => {
       link.addEventListener("click", (e) => {
         e.preventDefault();
         const section = link.getAttribute("data-section");
         this.showAdminSection(section);
+        
+        // Update active nav
+        document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
+        link.classList.add("active");
       });
     });
 
-    // Quick action buttons
-    document
-      .getElementById("refreshStatsBtn")
-      ?.addEventListener("click", () => {
-        this.loadAdminStats();
+    // Admin menu dropdown
+    const adminMenuBtn = document.getElementById("adminMenuBtn");
+    const adminDropdown = document.getElementById("adminDropdown");
+    
+    if (adminMenuBtn && adminDropdown) {
+      adminMenuBtn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        adminDropdown.classList.toggle("hidden");
       });
+      
+      // Close dropdown when clicking outside
+      document.addEventListener("click", function(e) {
+        if (!adminMenuBtn.contains(e.target) && !adminDropdown.contains(e.target)) {
+          adminDropdown.classList.add("hidden");
+        }
+      });
+    }
 
-    document.getElementById("exportDataBtn")?.addEventListener("click", () => {
-      this.exportAdminData();
+    // Quick action buttons
+    const refreshStatsBtn = document.getElementById("refreshStatsBtn");
+    if (refreshStatsBtn) {
+      refreshStatsBtn.addEventListener("click", async () => {
+        await this.loadAdminStats();
+      });
+    }
+
+    const exportDataBtn = document.getElementById("exportDataBtn");
+    if (exportDataBtn) {
+      exportDataBtn.addEventListener("click", () => {
+        this.exportAdminData();
+      });
+    }
+
+    // Refresh activities button
+    const refreshActivitiesBtn = document.getElementById("refreshActivitiesBtn");
+    if (refreshActivitiesBtn) {
+      refreshActivitiesBtn.addEventListener("click", async () => {
+        await this.loadRecentActivities();
+      });
+    }
+
+    // Edit activities button
+    document.getElementById("editActivitiesBtn")?.addEventListener("click", () => {
+      this.toggleEditActivities();
     });
 
     // User search and filters
-    document.getElementById("userSearch")?.addEventListener("input", (e) => {
-      adminUsersManager.applySearchFilter(e.target.value);
-    });
+    const userSearch = document.getElementById("userSearch");
+    if (userSearch && typeof adminUsersManager !== "undefined") {
+      userSearch.addEventListener("input", (e) => {
+        adminUsersManager.applySearchFilter(e.target.value);
+      });
+    }
 
-    document
-      .getElementById("userStatusFilter")
-      ?.addEventListener("change", (e) => {
+    const userStatusFilter = document.getElementById("userStatusFilter");
+    if (userStatusFilter && typeof adminUsersManager !== "undefined") {
+      userStatusFilter.addEventListener("change", (e) => {
         adminUsersManager.applyStatusFilter(e.target.value);
       });
+    }
   }
 
   async apiCall(endpoint, options = {}) {
@@ -163,8 +218,21 @@ class AdminDashboard {
   }
 
   async loadAdminStats() {
+    const refreshStatsBtn = document.getElementById("refreshStatsBtn");
+    const statsGrid = document.getElementById("adminStatsGrid");
+    
     try {
-      this.showLoading("stats");
+      // Show loading state
+      if (refreshStatsBtn) {
+        const originalHTML = refreshStatsBtn.innerHTML;
+        refreshStatsBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+        refreshStatsBtn.disabled = true;
+        refreshStatsBtn.setAttribute("data-original-html", originalHTML);
+      }
+
+      if (statsGrid) {
+        statsGrid.style.opacity = "0.6";
+      }
       
       // Load real stats from Firestore
       await this.ensureFirebase();
@@ -182,6 +250,7 @@ class AdminDashboard {
       const totalUsers = usersSnapshot.size;
       const activeUsers = usersSnapshot.docs.filter(doc => !doc.data().deleted).length;
       const totalConnections = connectionsSnapshot.docs.filter(doc => doc.data().status === "accepted").length;
+      const totalGroups = conversationsSnapshot.size; // Each conversation represents a study group/chat
       
       let totalMessages = 0;
       conversationsSnapshot.forEach(doc => {
@@ -203,55 +272,80 @@ class AdminDashboard {
         totalMessages,
         totalConnections,
         newUsersToday,
+        totalGroups,
         pendingReports: 0, // Can be implemented later if needed
       };
 
       this.updateStatsUI();
+      
+      // Show success feedback
+      this.showSuccess("Statistics refreshed successfully!");
     } catch (error) {
       console.error("Error loading admin stats:", error);
-      this.showError("Failed to load statistics");
+      this.showError("Failed to load statistics. Please try again.");
     } finally {
-      this.hideLoading("stats");
+      // Restore button state
+      if (refreshStatsBtn && refreshStatsBtn.getAttribute("data-original-html")) {
+        refreshStatsBtn.innerHTML = refreshStatsBtn.getAttribute("data-original-html");
+        refreshStatsBtn.disabled = false;
+        refreshStatsBtn.removeAttribute("data-original-html");
+      }
+      
+      if (statsGrid) {
+        statsGrid.style.opacity = "1";
+      }
     }
   }
 
   updateStatsUI() {
-    // Update stats using h3 elements like user dashboard stat cards
+    // Update stats using analytics-value elements (analytics card style)
     const totalUsersEl = document.getElementById("adminTotalUsers");
     const activeUsersEl = document.getElementById("adminActiveUsers");
     const totalMessagesEl = document.getElementById("adminTotalMessages");
     const totalConnectionsEl = document.getElementById("adminTotalConnections");
     const newUsersTodayEl = document.getElementById("adminNewUsersToday");
+    const totalGroupsEl = document.getElementById("adminTotalGroups");
     
     if (totalUsersEl) totalUsersEl.textContent = this.stats.totalUsers.toLocaleString();
     if (activeUsersEl) activeUsersEl.textContent = this.stats.activeUsers.toLocaleString();
     if (totalMessagesEl) totalMessagesEl.textContent = this.stats.totalMessages.toLocaleString();
     if (totalConnectionsEl) totalConnectionsEl.textContent = this.stats.totalConnections.toLocaleString();
     if (newUsersTodayEl) newUsersTodayEl.textContent = this.stats.newUsersToday.toLocaleString();
+    if (totalGroupsEl) totalGroupsEl.textContent = this.stats.totalGroups.toLocaleString();
   }
 
   async loadRecentActivities() {
+    const refreshActivitiesBtn = document.getElementById("refreshActivitiesBtn");
+    const container = document.getElementById("recentActivities");
+    
     try {
+      // Show loading state
+      if (refreshActivitiesBtn) {
+        const originalHTML = refreshActivitiesBtn.innerHTML;
+        refreshActivitiesBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+        refreshActivitiesBtn.disabled = true;
+        refreshActivitiesBtn.setAttribute("data-original-html", originalHTML);
+      }
+
+      if (container) {
+        container.innerHTML = '<div class="loading-message"><i class="fas fa-spinner fa-spin"></i> Loading recent activities...</div>';
+      }
+
       // Load recent activities from Firestore - dynamic data only
       await this.ensureFirebase();
       
       if (!this.db) {
-        console.warn("Database not available for activities");
-        const container = document.getElementById("recentActivities");
-        if (container) {
-          container.innerHTML = '<div class="no-data">Unable to load activities</div>';
-        }
-        return;
+        throw new Error("Database not available");
       }
 
       const activities = [];
 
-      // Get recent user registrations (last 3)
+      // Get recent user registrations (last 5)
       try {
         const usersSnapshot = await this.db
           .collection("users")
           .orderBy("createdAt", "desc")
-          .limit(3)
+          .limit(5)
           .get();
 
         usersSnapshot.forEach(doc => {
@@ -269,15 +363,38 @@ class AdminDashboard {
         });
       } catch (userError) {
         console.warn("Error loading user activities:", userError);
+        // Try without orderBy if index doesn't exist
+        try {
+          const usersSnapshot = await this.db
+            .collection("users")
+            .limit(5)
+            .get();
+
+          usersSnapshot.forEach(doc => {
+            const userData = doc.data();
+            if (!userData.deleted) {
+              const createdAt = userData.createdAt && userData.createdAt.toDate ? userData.createdAt.toDate() : new Date(userData.createdAt || Date.now());
+              activities.push({
+                id: doc.id,
+                type: "user_signup",
+                description: `New user registered: ${userData.name || "Student"}`,
+                timestamp: createdAt,
+                user: { name: userData.name, id: doc.id },
+              });
+            }
+          });
+        } catch (fallbackError) {
+          console.warn("Error loading user activities (fallback):", fallbackError);
+        }
       }
 
-      // Get recent connections (last 2)
+      // Get recent connections (last 5)
       try {
         const connectionsSnapshot = await this.db
           .collection("connections")
           .where("status", "==", "accepted")
           .orderBy("updatedAt", "desc")
-          .limit(2)
+          .limit(5)
           .get();
 
         connectionsSnapshot.forEach(doc => {
@@ -292,18 +409,79 @@ class AdminDashboard {
         });
       } catch (connError) {
         console.warn("Error loading connection activities:", connError);
+        // Try without orderBy if index doesn't exist
+        try {
+          const connectionsSnapshot = await this.db
+            .collection("connections")
+            .where("status", "==", "accepted")
+            .limit(5)
+            .get();
+
+          connectionsSnapshot.forEach(doc => {
+            const connData = doc.data();
+            const updatedAt = connData.updatedAt && connData.updatedAt.toDate ? connData.updatedAt.toDate() : new Date(connData.updatedAt || Date.now());
+            activities.push({
+              id: doc.id,
+              type: "connection_made",
+              description: `${connData.requesterName || "User"} connected with ${connData.receiverName || "User"}`,
+              timestamp: updatedAt,
+            });
+          });
+        } catch (fallbackError) {
+          console.warn("Error loading connection activities (fallback):", fallbackError);
+        }
       }
 
-      // Sort by timestamp (most recent first) and take top 5
+      // Get recent messages (last 3) - conversations with recent activity
+      try {
+        const conversationsSnapshot = await this.db
+          .collection("conversations")
+          .orderBy("updatedAt", "desc")
+          .limit(3)
+          .get();
+
+        conversationsSnapshot.forEach(doc => {
+          const convData = doc.data();
+          const updatedAt = convData.updatedAt && convData.updatedAt.toDate ? convData.updatedAt.toDate() : new Date(convData.updatedAt || Date.now());
+          const participantIds = convData.participants || [];
+          if (participantIds.length >= 2) {
+            const participantDetails = convData.participantDetails || {};
+            const firstParticipant = Object.values(participantDetails)[0] || {};
+            const secondParticipant = Object.values(participantDetails)[1] || {};
+            activities.push({
+              id: doc.id,
+              type: "message_sent",
+              description: `New message in conversation: ${firstParticipant.name || "User"} & ${secondParticipant.name || "User"}`,
+              timestamp: updatedAt,
+            });
+          }
+        });
+      } catch (messageError) {
+        console.warn("Error loading message activities:", messageError);
+      }
+
+      // Sort by timestamp (most recent first) and take top 8
       activities.sort((a, b) => b.timestamp - a.timestamp);
-      const recentActivities = activities.slice(0, 5);
+      const recentActivities = activities.slice(0, 8);
 
       this.displayRecentActivities(recentActivities);
+      
+      // Show success feedback
+      if (refreshActivitiesBtn) {
+        this.showSuccess("Activities refreshed successfully!");
+      }
     } catch (error) {
       console.error("Error loading recent activities:", error);
-      const container = document.getElementById("recentActivities");
       if (container) {
-        container.innerHTML = '<div class="no-data">Unable to load activities</div>';
+        container.innerHTML = '<div class="no-data" style="text-align: center; padding: 20px; color: #e74c3c;"><i class="fas fa-exclamation-circle"></i> Unable to load activities. Please try again.</div>';
+      }
+      this.showError("Failed to load activities. Please try again.");
+    } finally {
+      // Restore button state
+      if (refreshActivitiesBtn && refreshActivitiesBtn.getAttribute("data-original-html")) {
+        refreshActivitiesBtn.innerHTML = refreshActivitiesBtn.getAttribute("data-original-html");
+        refreshActivitiesBtn.disabled = false;
+        refreshActivitiesBtn.removeAttribute("data-original-html");
       }
     }
   }
@@ -317,25 +495,107 @@ class AdminDashboard {
       return;
     }
 
+    const isEditing = container.getAttribute("data-editing") === "true";
+
     container.innerHTML = activities
       .map(
-        (activity) => `
-            <div class="activity-item">
+        (activity, index) => `
+            <div class="activity-item" data-activity-index="${index}" data-activity-type="${activity.type}">
                 <div class="activity-icon">
                     <i class="fas fa-${this.getActivityIcon(
                       activity.type
                     )}"></i>
                 </div>
                 <div class="activity-content">
-                    <p class="activity-description">${activity.description}</p>
+                    ${isEditing ? `
+                      <input type="text" class="activity-edit-input" value="${activity.description.replace(/"/g, '&quot;')}" 
+                             data-activity-id="${activity.id || index}">
+                    ` : `
+                      <p class="activity-description">${activity.description}</p>
+                    `}
                     <span class="activity-time">${this.formatTime(
                       activity.timestamp
                     )}</span>
                 </div>
+                ${isEditing ? `
+                  <button class="activity-delete-btn" data-activity-index="${index}">
+                    <i class="fas fa-trash"></i>
+                    <span>Delete</span>
+                  </button>
+                ` : ''}
             </div>
         `
       )
       .join("");
+
+    // Add event listeners for edit mode
+    if (isEditing) {
+      container.querySelectorAll(".activity-delete-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          const index = parseInt(btn.getAttribute("data-activity-index"));
+          this.deleteActivity(index);
+        });
+      });
+
+      container.querySelectorAll(".activity-edit-input").forEach(input => {
+        input.addEventListener("blur", (e) => {
+          const activityId = input.getAttribute("data-activity-id");
+          const newDescription = input.value.trim();
+          if (newDescription) {
+            this.updateActivity(activityId, newDescription);
+          }
+        });
+      });
+    }
+  }
+
+  toggleEditActivities() {
+    const container = document.getElementById("recentActivities");
+    if (!container) return;
+
+    const isEditing = container.getAttribute("data-editing") === "true";
+    container.setAttribute("data-editing", isEditing ? "false" : "true");
+    
+    const editBtn = document.getElementById("editActivitiesBtn");
+    if (editBtn) {
+      if (isEditing) {
+        editBtn.innerHTML = '<i class="fas fa-edit"></i> Edit';
+        editBtn.classList.remove("primary");
+        editBtn.classList.add("secondary");
+      } else {
+        editBtn.innerHTML = '<i class="fas fa-save"></i> Save';
+        editBtn.classList.remove("secondary");
+        editBtn.classList.add("primary");
+      }
+    }
+
+    // Reload activities to show edit mode
+    this.loadRecentActivities();
+  }
+
+  deleteActivity(index) {
+    // Activities are read-only from Firestore, so we'll just show a message
+    // In a production app, you might want to hide activities locally or mark them as hidden
+    if (confirm("Note: Activities are read-only. This will only hide the activity from view. Continue?")) {
+      const container = document.getElementById("recentActivities");
+      if (container) {
+        const activityItem = container.querySelector(`[data-activity-index="${index}"]`);
+        if (activityItem) {
+          activityItem.style.opacity = "0.5";
+          activityItem.style.textDecoration = "line-through";
+          setTimeout(() => {
+            this.loadRecentActivities();
+          }, 500);
+        }
+      }
+    }
+  }
+
+  updateActivity(activityId, newDescription) {
+    // Activities are read-only from Firestore
+    // Show a message that activities cannot be edited
+    this.showError("Activities are read-only and cannot be edited. They are automatically generated from platform events.");
+    console.log("Activity update attempted (read-only):", activityId, "with description:", newDescription);
   }
 
   getActivityIcon(type) {
@@ -381,12 +641,8 @@ class AdminDashboard {
     } else if (sectionId === "adminDashboardSection") {
       this.loadAdminStats();
       this.loadRecentActivities();
-    } else if (sectionId === "adminAnalyticsSection") {
-      // Analytics section - can add functionality here
-      console.log('Analytics section loaded');
     } else if (sectionId === "adminSettingsSection") {
-      // Settings section - can add functionality here
-      console.log('Settings section loaded');
+      this.loadSettings();
     }
   }
 
@@ -516,6 +772,139 @@ class AdminDashboard {
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     return date.toLocaleDateString();
+  }
+
+  async loadAnalytics() {
+    const analyticsContent = document.getElementById("adminAnalyticsContent");
+    if (!analyticsContent) return;
+
+    try {
+      analyticsContent.innerHTML = '<div class="loading-message"><i class="fas fa-spinner fa-spin"></i> Loading analytics...</div>';
+      
+      await this.ensureFirebase();
+      if (!this.db) {
+        throw new Error("Database not available");
+      }
+
+      // Load analytics data from Firestore
+      const [usersSnapshot, connectionsSnapshot, conversationsSnapshot] = await Promise.all([
+        this.db.collection("users").get(),
+        this.db.collection("connections").get(),
+        this.db.collection("conversations").get(),
+      ]);
+
+      const totalUsers = usersSnapshot.size;
+      const activeUsers = usersSnapshot.docs.filter(doc => !doc.data().deleted).length;
+      const totalConnections = connectionsSnapshot.docs.filter(doc => doc.data().status === "accepted").length;
+      const totalGroups = conversationsSnapshot.size;
+      let totalMessages = 0;
+      conversationsSnapshot.forEach(doc => {
+        totalMessages += doc.data().messageCount || 0;
+      });
+
+      // Calculate growth (users created in last 7 days)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const newUsersThisWeek = usersSnapshot.docs.filter(doc => {
+        const userData = doc.data();
+        const createdAt = userData.createdAt && userData.createdAt.toDate ? userData.createdAt.toDate() : new Date(userData.createdAt || 0);
+        return createdAt >= sevenDaysAgo && !doc.data().deleted;
+      }).length;
+
+      analyticsContent.innerHTML = `
+        <div class="analytics-grid">
+          <div class="analytics-card">
+            <h3><i class="fas fa-users"></i> Total Users</h3>
+            <div class="analytics-value">${totalUsers.toLocaleString()}</div>
+            <p class="analytics-label">Registered users</p>
+          </div>
+          <div class="analytics-card">
+            <h3><i class="fas fa-user-check"></i> Active Users</h3>
+            <div class="analytics-value">${activeUsers.toLocaleString()}</div>
+            <p class="analytics-label">Currently active</p>
+          </div>
+          <div class="analytics-card">
+            <h3><i class="fas fa-user-friends"></i> Connections</h3>
+            <div class="analytics-value">${totalConnections.toLocaleString()}</div>
+            <p class="analytics-label">Total connections</p>
+          </div>
+          <div class="analytics-card">
+            <h3><i class="fas fa-users-cog"></i> Study Groups</h3>
+            <div class="analytics-value">${totalGroups.toLocaleString()}</div>
+            <p class="analytics-label">Active groups</p>
+          </div>
+          <div class="analytics-card">
+            <h3><i class="fas fa-comments"></i> Messages</h3>
+            <div class="analytics-value">${totalMessages.toLocaleString()}</div>
+            <p class="analytics-label">Total messages</p>
+          </div>
+          <div class="analytics-card">
+            <h3><i class="fas fa-chart-line"></i> Growth (7 days)</h3>
+            <div class="analytics-value">${newUsersThisWeek.toLocaleString()}</div>
+            <p class="analytics-label">New users this week</p>
+          </div>
+        </div>
+      `;
+    } catch (error) {
+      console.error("Error loading analytics:", error);
+      analyticsContent.innerHTML = `
+        <div class="error-message" style="text-align: center; padding: 40px;">
+          <p>Unable to load analytics. Please try again later.</p>
+        </div>
+      `;
+    }
+  }
+
+  async loadSettings() {
+    const settingsContent = document.getElementById("adminSettingsContent");
+    if (!settingsContent) return;
+
+    try {
+      settingsContent.innerHTML = '<div class="loading-message"><i class="fas fa-spinner fa-spin"></i> Loading settings...</div>';
+      
+      // Load settings from Firestore or show configuration options
+      await this.ensureFirebase();
+      
+      settingsContent.innerHTML = `
+        <div class="settings-grid">
+          <div class="settings-card">
+            <h3><i class="fas fa-database"></i> Database</h3>
+            <p>Manage database connections and backups</p>
+            <button class="settings-btn" onclick="alert('Database backup feature coming soon')">
+              <i class="fas fa-download"></i> Backup Database
+            </button>
+          </div>
+          <div class="settings-card">
+            <h3><i class="fas fa-user-shield"></i> User Roles</h3>
+            <p>Manage user permissions and roles</p>
+            <button class="settings-btn" onclick="alert('User roles management coming soon')">
+              <i class="fas fa-cog"></i> Manage Roles
+            </button>
+          </div>
+          <div class="settings-card">
+            <h3><i class="fas fa-bell"></i> Notifications</h3>
+            <p>Configure platform notifications</p>
+            <button class="settings-btn" onclick="alert('Notifications settings coming soon')">
+              <i class="fas fa-bell"></i> Configure
+            </button>
+          </div>
+          <div class="settings-card">
+            <h3><i class="fas fa-shield-alt"></i> Security</h3>
+            <p>Security and privacy settings</p>
+            <button class="settings-btn" onclick="alert('Security settings coming soon')">
+              <i class="fas fa-lock"></i> Security
+            </button>
+          </div>
+        </div>
+      `;
+    } catch (error) {
+      console.error("Error loading settings:", error);
+      settingsContent.innerHTML = `
+        <div class="error-message" style="text-align: center; padding: 40px;">
+          <p>Unable to load settings. Please try again later.</p>
+        </div>
+      `;
+    }
   }
 }
 
