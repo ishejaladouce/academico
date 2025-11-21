@@ -89,10 +89,9 @@ class DashboardApp {
           
           // Always update all displays to ensure UI is in sync
           this.displayConnections(grouped.accepted);
-          this.displayPendingRequests(grouped.pendingIncoming);
           this.displaySentRequests(grouped.pendingOutgoing);
           
-          // Update notification badge
+          // Update notification badge for incoming requests (even though we don't show the tab)
           this.updateConnectionNotification(grouped.pendingIncoming.length);
         });
       }
@@ -951,7 +950,6 @@ class DashboardApp {
   async loadConnections() {
     console.log("Loading connections...");
     this.displayConnections(this.connectionState?.accepted || []);
-    this.displayPendingRequests(this.connectionState?.pendingIncoming || []);
     this.displaySentRequests(this.connectionState?.pendingOutgoing || []);
   }
 
@@ -1071,56 +1069,12 @@ class DashboardApp {
       .join("");
   }
 
-  async loadPendingRequests() {
-    // Use connectionState if available, otherwise empty array
-    const pendingRequests = this.connectionState?.pendingIncoming || [];
-    this.displayPendingRequests(pendingRequests);
-  }
-
-  displayPendingRequests(requests = []) {
-    const pendingList = document.getElementById("pendingRequestsList");
-    if (!pendingList) return;
-
-    if (!requests.length) {
-      pendingList.innerHTML = `
-        <div class="no-requests">
-          <i class="fas fa-clock"></i>
-          <p>No pending requests</p>
-        </div>
-      `;
-      return;
-    }
-
-    pendingList.innerHTML = requests
-      .map((request) => {
-        return `
-        <div class="request-item">
-          <div>
-            <strong>${request.requesterName}</strong>
-            <p>${request.requesterCourse || "Course"} • ${
-          request.requesterUniversity || "University"
-        }</p>
-          </div>
-          <div class="request-actions">
-            <button class="action-btn connect-btn" onclick="dashboard.respondToConnection('${
-              request.id
-            }','accept')">
-              <i class="fas fa-check"></i> Accept
-            </button>
-            <button class="action-btn chat-btn" onclick="dashboard.respondToConnection('${
-              request.id
-            }','decline')">
-              <i class="fas fa-times"></i> Decline
-            </button>
-          </div>
-        </div>
-      `;
-      })
-      .join("");
-  }
 
   async loadSentRequests() {
-    this.displaySentRequests([]);
+    // Use connectionState if available, otherwise empty array
+    // This includes both pending and accepted sent requests
+    const sentRequests = this.connectionState?.pendingOutgoing || [];
+    this.displaySentRequests(sentRequests);
   }
 
   displaySentRequests(requests = []) {
@@ -1139,7 +1093,11 @@ class DashboardApp {
 
     sentList.innerHTML = requests
       .map(
-        (request) => `
+        (request) => {
+          const isAccepted = request.status === "accepted";
+          const isPending = request.status === "pending";
+          
+          return `
         <div class="request-item">
           <div>
             <strong>${request.receiverName}</strong>
@@ -1148,10 +1106,16 @@ class DashboardApp {
         }</p>
           </div>
           <div class="request-status">
-            <span class="status-badge status-pending">Pending</span>
+            ${isAccepted 
+              ? '<span class="status-badge status-accepted"><i class="fas fa-check-circle"></i> Accepted</span>'
+              : isPending
+              ? '<span class="status-badge status-pending"><i class="fas fa-clock"></i> Pending</span>'
+              : '<span class="status-badge status-pending">Pending</span>'
+            }
           </div>
         </div>
-      `
+      `;
+        }
       )
       .join("");
   }
@@ -1728,7 +1692,6 @@ class DashboardApp {
         if (this.connectionState) {
           console.log("Refreshing connections display after response");
           this.displayConnections(this.connectionState.accepted || []);
-          this.displayPendingRequests(this.connectionState.pendingIncoming || []);
           this.displaySentRequests(this.connectionState.pendingOutgoing || []);
         }
       }, 500);

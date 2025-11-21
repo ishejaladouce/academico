@@ -76,7 +76,7 @@ class ConnectionsManager {
     const grouped = {
       accepted: [],
       pendingIncoming: [],
-      pendingOutgoing: [],
+      pendingOutgoing: [], // This will include ALL sent requests (both pending and accepted)
     };
 
     connections.forEach((conn) => {
@@ -85,17 +85,30 @@ class ConnectionsManager {
         return;
       }
       
+      // Check if user was the requester (sent the request)
+      const userSentRequest = conn.requesterId === this.currentUser.id;
+      // Check if user was the receiver (received the request)
+      const userReceivedRequest = conn.receiverId === this.currentUser.id;
+      
       if (conn.status === "accepted") {
+        // All accepted connections go to accepted list
         grouped.accepted.push(conn);
+        
+        // Also add to sent requests if user sent it
+        if (userSentRequest) {
+          grouped.pendingOutgoing.push(conn);
+        }
       } else if (
         conn.status === "pending" &&
-        conn.receiverId === this.currentUser.id
+        userReceivedRequest
       ) {
+        // Pending requests received by user
         grouped.pendingIncoming.push(conn);
       } else if (
         conn.status === "pending" &&
-        conn.requesterId === this.currentUser.id
+        userSentRequest
       ) {
+        // Pending requests sent by user
         grouped.pendingOutgoing.push(conn);
       } else if (conn.status === "declined") {
         // Ignore declined connections - they won't appear in any list
@@ -105,7 +118,7 @@ class ConnectionsManager {
       }
     });
 
-    console.log(`Partitioned connections: ${grouped.accepted.length} accepted, ${grouped.pendingIncoming.length} pending incoming, ${grouped.pendingOutgoing.length} pending outgoing`);
+    console.log(`Partitioned connections: ${grouped.accepted.length} accepted, ${grouped.pendingIncoming.length} pending incoming, ${grouped.pendingOutgoing.length} sent requests (pending + accepted)`);
     return grouped;
   }
 
