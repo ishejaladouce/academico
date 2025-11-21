@@ -9,13 +9,39 @@ class ConnectionsManager {
   }
 
   async init() {
+    await this.ensureFirebase();
     this.currentUser = authManager.getCurrentUser();
-    if (firebase && firebase.firestore) {
-      this.db = firebase.firestore();
-      if (this.currentUser) {
-        this.subscribeToConnections();
-      }
+    if (this.currentUser && this.db) {
+      this.subscribeToConnections();
     }
+  }
+
+  // Ensure Firebase is loaded before using it
+  async ensureFirebase() {
+    if (this.db) return this.db;
+    
+    // Wait for Firebase to be available
+    let attempts = 0;
+    while (typeof firebase === "undefined" && attempts < 10) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      attempts++;
+    }
+    
+    if (typeof firebase !== "undefined" && firebase.firestore) {
+      this.db = firebase.firestore();
+      return this.db;
+    }
+    
+    throw new Error("Firebase Firestore not available");
+  }
+
+  // Re-initialize when user changes
+  async reinit() {
+    if (this.unsubscribe) {
+      this.unsubscribe();
+      this.unsubscribe = null;
+    }
+    await this.init();
   }
 
   // Subscribe to live connection updates so the dashboard stays fresh
@@ -54,6 +80,11 @@ class ConnectionsManager {
     };
 
     connections.forEach((conn) => {
+      if (!conn.status) {
+        console.warn("Connection missing status:", conn.id);
+        return;
+      }
+      
       if (conn.status === "accepted") {
         grouped.accepted.push(conn);
       } else if (
@@ -66,9 +97,15 @@ class ConnectionsManager {
         conn.requesterId === this.currentUser.id
       ) {
         grouped.pendingOutgoing.push(conn);
+      } else if (conn.status === "declined") {
+        // Ignore declined connections - they won't appear in any list
+        console.log("Connection declined, not displaying:", conn.id);
+      } else {
+        console.warn("Unknown connection status:", conn.status, conn.id);
       }
     });
 
+    console.log(`Partitioned connections: ${grouped.accepted.length} accepted, ${grouped.pendingIncoming.length} pending incoming, ${grouped.pendingOutgoing.length} pending outgoing`);
     return grouped;
   }
 
@@ -93,6 +130,12 @@ class ConnectionsManager {
 
     if (!targetUser?.id || targetUser.id === this.currentUser.id) {
       throw new Error("Invalid connection target.");
+    }
+
+    // Ensure Firebase is ready
+    await this.ensureFirebase();
+    if (!this.db) {
+      throw new Error("Database not available. Please refresh the page.");
     }
 
     const connectionId = this.generateConnectionId(
@@ -145,7 +188,16 @@ class ConnectionsManager {
   }
 
   async respondToRequest(connectionId, action) {
-    if (!this.db || !this.currentUser) return;
+    if (!this.currentUser) {
+      throw new Error("Please log in to respond to connection requests.");
+    }
+    
+    // Ensure Firebase is ready
+    await this.ensureFirebase();
+    if (!this.db) {
+      throw new Error("Database not available. Please refresh the page.");
+    }
+    
     const connectionRef = this.db.collection("connections").doc(connectionId);
     const snapshot = await connectionRef.get();
 
@@ -153,7 +205,18 @@ class ConnectionsManager {
       throw new Error("Connection request not found.");
     }
 
+    const currentData = snapshot.data();
+    console.log(`Responding to connection ${connectionId}:`, {
+      currentStatus: currentData.status,
+      action: action,
+      requesterId: currentData.requesterId,
+      receiverId: currentData.receiverId,
+      currentUserId: this.currentUser.id
+    });
+
     const newStatus = action === "accept" ? "accepted" : "declined";
+    
+    // Update the connection status
     await connectionRef.set(
       {
         status: newStatus,
@@ -161,6 +224,59 @@ class ConnectionsManager {
       },
       { merge: true }
     );
+    
+    console.log(`Connection ${connectionId} status updated to: ${newStatus}`);
+    
+    // If accepted, auto-create a conversation for the two users
+    if (newStatus === "accepted") {
+      try {
+        const requesterId = currentData.requesterId;
+        const receiverId = currentData.receiverId;
+        const otherUserId = requesterId === this.currentUser.id ? receiverId : requesterId;
+        
+        // Get the other user's details
+        const otherUserRef = this.db.collection("users").doc(otherUserId);
+        const otherUserSnap = await otherUserRef.get();
+        const otherUserData = otherUserSnap.exists ? otherUserSnap.data() : null;
+        
+        // Generate conversation ID (same format as in messages.js)
+        const conversationId = [this.currentUser.id, otherUserId].sort().join("_");
+        const conversationRef = this.db.collection("conversations").doc(conversationId);
+        const conversationSnap = await conversationRef.get();
+        
+        // Only create if it doesn't exist
+        if (!conversationSnap.exists) {
+          await conversationRef.set({
+            id: conversationId,
+            participants: [this.currentUser.id, otherUserId],
+            participantDetails: {
+              [this.currentUser.id]: {
+                name: this.currentUser.name,
+                university: this.currentUser.university || "",
+                course: this.currentUser.course || "",
+              },
+              [otherUserId]: {
+                name: otherUserData?.name || currentData.requesterId === otherUserId ? currentData.requesterName : currentData.receiverName,
+                university: otherUserData?.university || (currentData.requesterId === otherUserId ? currentData.requesterUniversity : currentData.receiverUniversity) || "",
+                course: otherUserData?.course || (currentData.requesterId === otherUserId ? currentData.requesterCourse : currentData.receiverCourse) || "",
+              },
+            },
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            lastMessage: "",
+            messageCount: 0,
+          });
+          console.log(`Auto-created conversation ${conversationId} for accepted connection`);
+        }
+      } catch (error) {
+        console.error("Error auto-creating conversation:", error);
+        // Don't throw - conversation creation failure shouldn't block connection acceptance
+      }
+    }
+    
+    // Verify the update
+    const updatedSnapshot = await connectionRef.get();
+    const updatedData = updatedSnapshot.data();
+    console.log(`Verified connection status: ${updatedData.status}`);
   }
 
   generateConnectionId(idA, idB) {

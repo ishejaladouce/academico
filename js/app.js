@@ -446,16 +446,22 @@ class AcademicOApp {
     this.showLoading("Finding a study break activity...");
 
     try {
-      const response = await fetch("https://api.adviceslip.com/advice");
-
-      if (response.ok) {
-        const data = await response.json();
-        alert(
-          `Study Break Wisdom:\n\n"${data.slip.advice}"\n\nTake a moment to reflect!`
-        );
-      } else {
-        this.showFallbackStudyBreak();
-      }
+      // Use academic quotes instead of advice slip
+      const academicQuotes = [
+        "The beautiful thing about learning is that no one can take it away from you. - B.B. King",
+        "Education is the most powerful weapon which you can use to change the world. - Nelson Mandela",
+        "The mind is not a vessel to be filled, but a fire to be kindled. - Plutarch",
+        "Live as if you were to die tomorrow. Learn as if you were to live forever. - Mahatma Gandhi",
+        "An investment in knowledge pays the best interest. - Benjamin Franklin",
+        "The capacity to learn is a gift; the ability to learn is a skill; the willingness to learn is a choice. - Brian Herbert",
+        "Education is not preparation for life; education is life itself. - John Dewey",
+        "Learning never exhausts the mind. - Leonardo da Vinci",
+        "The more that you read, the more things you will know. The more that you learn, the more places you'll go. - Dr. Seuss",
+        "Success is the sum of small efforts repeated day in and day out. - Robert Collier",
+      ];
+      
+      const randomQuote = academicQuotes[Math.floor(Math.random() * academicQuotes.length)];
+      alert(`Study Break Wisdom:\n\n"${randomQuote}"\n\nTake a moment to reflect!`);
     } catch (error) {
       this.showFallbackStudyBreak();
     } finally {

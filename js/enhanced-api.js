@@ -101,55 +101,133 @@ class EnhancedAPIService {
     }
   }
 
-  // 3. FREE Quotes API that actually works (RELIABLE API)
+  // 3. Academic and Educational Quotes (Curated List)
   async getStudyQuote() {
     this.apiCallCount++;
     try {
-      // Using a different quotes API that's more reliable
-      const response = await fetch(
-        enhancedApiConfig.quotes || "https://api.adviceslip.com/advice"
-      );
-      if (!response.ok) throw new Error("Quotes API failed");
-
-      const data = await response.json();
-      this.apiStatus.quotes = "active";
-
-      return {
-        quote: data.slip.advice,
-        author: "Study Wisdom",
-        tags: ["education", "learning"],
-        success: true,
-        source: "Advice Slip API",
-      };
-    } catch (error) {
-      this.apiStatus.quotes = "inactive";
-      // Fallback quotes
-      const fallbackQuotes = [
+      // Curated list of academic and educational quotes
+      const academicQuotes = [
         {
-          quote:
-            "The beautiful thing about learning is that no one can take it away from you.",
+          quote: "The beautiful thing about learning is that no one can take it away from you.",
           author: "B.B. King",
           tags: ["education", "learning"],
         },
         {
-          quote:
-            "Education is the most powerful weapon which you can use to change the world.",
+          quote: "Education is the most powerful weapon which you can use to change the world.",
           author: "Nelson Mandela",
           tags: ["education", "change"],
         },
         {
-          quote:
-            "The mind is not a vessel to be filled, but a fire to be kindled.",
+          quote: "The mind is not a vessel to be filled, but a fire to be kindled.",
           author: "Plutarch",
           tags: ["knowledge", "learning"],
         },
+        {
+          quote: "Live as if you were to die tomorrow. Learn as if you were to live forever.",
+          author: "Mahatma Gandhi",
+          tags: ["learning", "wisdom"],
+        },
+        {
+          quote: "An investment in knowledge pays the best interest.",
+          author: "Benjamin Franklin",
+          tags: ["education", "investment"],
+        },
+        {
+          quote: "The capacity to learn is a gift; the ability to learn is a skill; the willingness to learn is a choice.",
+          author: "Brian Herbert",
+          tags: ["learning", "motivation"],
+        },
+        {
+          quote: "Education is not preparation for life; education is life itself.",
+          author: "John Dewey",
+          tags: ["education", "philosophy"],
+        },
+        {
+          quote: "Learning never exhausts the mind.",
+          author: "Leonardo da Vinci",
+          tags: ["learning", "mind"],
+        },
+        {
+          quote: "The more that you read, the more things you will know. The more that you learn, the more places you'll go.",
+          author: "Dr. Seuss",
+          tags: ["reading", "learning"],
+        },
+        {
+          quote: "Study hard what interests you the most in the most undisciplined, irreverent and original manner possible.",
+          author: "Richard Feynman",
+          tags: ["study", "curiosity"],
+        },
+        {
+          quote: "Success is the sum of small efforts repeated day in and day out.",
+          author: "Robert Collier",
+          tags: ["success", "persistence"],
+        },
+        {
+          quote: "The expert in anything was once a beginner.",
+          author: "Helen Hayes",
+          tags: ["learning", "growth"],
+        },
+        {
+          quote: "Don't let what you cannot do interfere with what you can do.",
+          author: "John Wooden",
+          tags: ["motivation", "perseverance"],
+        },
+        {
+          quote: "The only way to do great work is to love what you do.",
+          author: "Steve Jobs",
+          tags: ["passion", "work"],
+        },
+        {
+          quote: "It does not matter how slowly you go as long as you do not stop.",
+          author: "Confucius",
+          tags: ["persistence", "progress"],
+        },
+        {
+          quote: "The future belongs to those who believe in the beauty of their dreams.",
+          author: "Eleanor Roosevelt",
+          tags: ["dreams", "future"],
+        },
+        {
+          quote: "You don't have to be great to start, but you have to start to be great.",
+          author: "Zig Ziglar",
+          tags: ["motivation", "action"],
+        },
+        {
+          quote: "Knowledge is power, but enthusiasm pulls the switch.",
+          author: "Ivern Ball",
+          tags: ["knowledge", "enthusiasm"],
+        },
+        {
+          quote: "The purpose of learning is growth, and our minds, unlike our bodies, can continue growing as we live.",
+          author: "Mortimer Adler",
+          tags: ["learning", "growth"],
+        },
+        {
+          quote: "Study while others are sleeping; work while others are loafing; prepare while others are playing; and dream while others are wishing.",
+          author: "William Arthur Ward",
+          tags: ["study", "preparation"],
+        },
       ];
-      const randomQuote =
-        fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
+
+      // Select a random academic quote
+      const randomQuote = academicQuotes[Math.floor(Math.random() * academicQuotes.length)];
+      this.apiStatus.quotes = "active";
+
       return {
         ...randomQuote,
         success: true,
-        source: "Fallback Quotes",
+        source: "Academic Quotes Library",
+        fallback: false,
+      };
+    } catch (error) {
+      this.apiStatus.quotes = "inactive";
+      // Fallback to a default quote if something goes wrong
+      return {
+        quote: "The beautiful thing about learning is that no one can take it away from you.",
+        author: "B.B. King",
+        tags: ["education", "learning"],
+        success: true,
+        source: "Default Quote",
         fallback: true,
       };
     }

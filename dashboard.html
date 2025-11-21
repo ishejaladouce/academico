@@ -47,6 +47,9 @@
                 >0</span
               >
             </a>
+            <a href="#studybreak" class="nav-link" data-section="studyBreakSection">
+              <i class="fas fa-brain"></i> Study Break
+            </a>
             <a href="#profile" class="nav-link" data-section="profileSection">
               <i class="fas fa-user"></i> Profile
             </a>
@@ -181,12 +184,6 @@
             </form>
           </div>
 
-          <!-- Study Break Button -->
-          <div class="study-break-container">
-            <button class="study-break-btn" id="studyBreakBtn">
-              <i class="fas fa-brain"></i> Need a Study Break?
-            </button>
-          </div>
 
           <!-- Results Section -->
           <div class="results-section hidden" id="resultsSection">
@@ -344,6 +341,44 @@
                   <p>No sent requests</p>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Study Break Section -->
+      <section class="dashboard-section hidden" id="studyBreakSection">
+        <div class="container">
+          <div class="section-header">
+            <h2>Study Break</h2>
+            <p>Take a moment to refresh your mind with helpful study tips and wisdom</p>
+          </div>
+
+          <div class="study-break-content">
+            <div class="study-break-card">
+              <div class="study-break-icon">
+                <i class="fas fa-lightbulb"></i>
+              </div>
+              <h3 id="studyBreakTitle">Study Break Wisdom</h3>
+              <div class="study-break-quote" id="studyBreakQuote">
+                <p>Click the button below to get a helpful study tip!</p>
+              </div>
+              <div class="study-break-author" id="studyBreakAuthor"></div>
+              <button class="study-break-refresh-btn" id="studyBreakRefreshBtn">
+                <i class="fas fa-sync-alt"></i> Get New Tip
+              </button>
+            </div>
+
+            <div class="study-break-tips">
+              <h4>Study Break Tips</h4>
+              <ul class="tips-list">
+                <li><i class="fas fa-check-circle"></i> Take a 5-10 minute break every 25-30 minutes of studying</li>
+                <li><i class="fas fa-check-circle"></i> Stand up and stretch to improve blood circulation</li>
+                <li><i class="fas fa-check-circle"></i> Look away from your screen and focus on something 20 feet away for 20 seconds</li>
+                <li><i class="fas fa-check-circle"></i> Drink water to stay hydrated and maintain focus</li>
+                <li><i class="fas fa-check-circle"></i> Take deep breaths to reduce stress and improve concentration</li>
+                <li><i class="fas fa-check-circle"></i> A short walk can boost creativity and problem-solving</li>
+              </ul>
             </div>
           </div>
         </div>
