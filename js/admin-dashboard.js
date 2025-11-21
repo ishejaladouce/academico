@@ -216,18 +216,18 @@ class AdminDashboard {
   }
 
   updateStatsUI() {
-    document.getElementById("adminTotalUsers").textContent =
-      this.stats.totalUsers.toLocaleString();
-    document.getElementById("adminActiveUsers").textContent =
-      this.stats.activeUsers.toLocaleString();
-    document.getElementById("adminTotalMessages").textContent =
-      this.stats.totalMessages.toLocaleString();
-    document.getElementById("adminTotalConnections").textContent =
-      this.stats.totalConnections.toLocaleString();
-    document.getElementById("adminNewUsersToday").textContent =
-      this.stats.newUsersToday.toLocaleString();
-    document.getElementById("adminPendingReports").textContent =
-      this.stats.pendingReports.toLocaleString();
+    // Update stats using h3 elements like user dashboard stat cards
+    const totalUsersEl = document.getElementById("adminTotalUsers");
+    const activeUsersEl = document.getElementById("adminActiveUsers");
+    const totalMessagesEl = document.getElementById("adminTotalMessages");
+    const totalConnectionsEl = document.getElementById("adminTotalConnections");
+    const newUsersTodayEl = document.getElementById("adminNewUsersToday");
+    
+    if (totalUsersEl) totalUsersEl.textContent = this.stats.totalUsers.toLocaleString();
+    if (activeUsersEl) activeUsersEl.textContent = this.stats.activeUsers.toLocaleString();
+    if (totalMessagesEl) totalMessagesEl.textContent = this.stats.totalMessages.toLocaleString();
+    if (totalConnectionsEl) totalConnectionsEl.textContent = this.stats.totalConnections.toLocaleString();
+    if (newUsersTodayEl) newUsersTodayEl.textContent = this.stats.newUsersToday.toLocaleString();
   }
 
   async loadRecentActivities() {
@@ -350,19 +350,21 @@ class AdminDashboard {
   }
 
   showAdminSection(sectionId) {
-    // Hide all admin sections
-    document.querySelectorAll(".admin-section").forEach((section) => {
+    // Hide all dashboard sections - using dashboard-section class like user dashboard
+    document.querySelectorAll(".dashboard-section").forEach((section) => {
       section.classList.remove("active");
+      section.classList.add("hidden");
     });
 
     // Show target section
     const targetSection = document.getElementById(sectionId);
     if (targetSection) {
       targetSection.classList.add("active");
+      targetSection.classList.remove("hidden");
     }
 
-    // Update active nav
-    document.querySelectorAll(".admin-nav-link").forEach((link) => {
+    // Update active nav - using nav-link class like user dashboard
+    document.querySelectorAll(".nav-link").forEach((link) => {
       link.classList.remove("active");
       if (link.getAttribute("data-section") === sectionId) {
         link.classList.add("active");
@@ -371,7 +373,20 @@ class AdminDashboard {
 
     // Load section-specific data
     if (sectionId === "adminUsersSection") {
-      adminUsersManager.loadUsers();
+      if (typeof adminUsersManager !== "undefined") {
+        adminUsersManager.loadUsers();
+      } else {
+        console.error('adminUsersManager not available');
+      }
+    } else if (sectionId === "adminDashboardSection") {
+      this.loadAdminStats();
+      this.loadRecentActivities();
+    } else if (sectionId === "adminAnalyticsSection") {
+      // Analytics section - can add functionality here
+      console.log('Analytics section loaded');
+    } else if (sectionId === "adminSettingsSection") {
+      // Settings section - can add functionality here
+      console.log('Settings section loaded');
     }
   }
 

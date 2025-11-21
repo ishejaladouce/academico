@@ -6,113 +6,107 @@
     <title>Admin Dashboard - AcademicO</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="css/dashboard.css">
 </head>
-<body class="admin-dashboard">
-    <!-- Admin Header -->
-    <header class="admin-header">
+<body>
+    <!-- Dashboard Header -->
+    <header class="dashboard-header">
         <div class="container">
-            <div class="admin-logo">
-                <i class="fas fa-shield-alt"></i>
-                <span class="admin-logo-text">AcademicO Admin</span>
+            <div class="dashboard-logo">
+                <div class="logo-text">academicO</div>
+                <div class="logo-tagline">Admin Dashboard</div>
             </div>
-            <div class="admin-user-menu">
-                <div class="admin-user-info">
-                    <div class="admin-user-name" id="adminUserName">Admin</div>
-                    <div class="admin-user-role" id="adminUserRole">Administrator</div>
+
+            <nav class="dashboard-nav">
+                <div class="nav-items">
+                    <a href="#dashboard" class="nav-link active" data-section="adminDashboardSection">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a href="#users" class="nav-link" data-section="adminUsersSection">
+                        <i class="fas fa-users"></i> Users
+                    </a>
+                    <a href="#analytics" class="nav-link" data-section="adminAnalyticsSection">
+                        <i class="fas fa-chart-bar"></i> Analytics
+                    </a>
+                    <a href="#settings" class="nav-link" data-section="adminSettingsSection">
+                        <i class="fas fa-cog"></i> Settings
+                    </a>
                 </div>
-                <button class="admin-logout-btn" id="adminLogoutBtn">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
-            </div>
+
+                <div class="user-menu">
+                    <button class="user-btn" id="adminMenuBtn">
+                        <div class="user-avatar">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <span id="adminUserName">Admin</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="user-dropdown hidden" id="adminDropdown">
+                        <button class="dropdown-item" id="adminLogoutBtn">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </div>
+                </div>
+            </nav>
         </div>
     </header>
 
-    <main class="admin-main">
+    <main class="dashboard-main">
         <div class="container">
-            <div class="admin-layout">
-                <!-- Sidebar -->
-                <aside class="admin-sidebar">
-                    <nav class="admin-nav">
-                        <ul>
-                            <li class="admin-nav-item">
-                                <a href="#dashboard" class="admin-nav-link active" data-section="adminDashboardSection">
-                                    <i class="fas fa-tachometer-alt"></i> Dashboard
-                                </a>
-                            </li>
-                            <li class="admin-nav-item">
-                                <a href="#users" class="admin-nav-link" data-section="adminUsersSection">
-                                    <i class="fas fa-users"></i> Users
-                                </a>
-                            </li>
-                            <li class="admin-nav-item">
-                                <a href="#reports" class="admin-nav-link" data-section="adminReportsSection">
-                                    <i class="fas fa-flag"></i> Reports
-                                </a>
-                            </li>
-                            <li class="admin-nav-item">
-                                <a href="#analytics" class="admin-nav-link" data-section="adminAnalyticsSection">
-                                    <i class="fas fa-chart-bar"></i> Analytics
-                                </a>
-                            </li>
-                            <li class="admin-nav-item">
-                                <a href="#settings" class="admin-nav-link" data-section="adminSettingsSection">
-                                    <i class="fas fa-cog"></i> Settings
-                                </a>
-                            </li>
-                        </ul>
-                    </nav>
-                </aside>
-
-                <!-- Main Content -->
-                <div class="admin-content">
                     <!-- Dashboard Section -->
-                    <section id="adminDashboardSection" class="admin-section active">
-                        <h2>Admin Dashboard</h2>
+                    <section id="adminDashboardSection" class="dashboard-section active">
+                        <div class="container">
+                            <div class="section-header">
+                                <h2>Admin Dashboard</h2>
+                                <p>Manage users and platform statistics</p>
+                            </div>
                         
                         <!-- Stats Grid -->
-                        <div class="admin-stats-grid">
-                            <div class="admin-stat-card">
-                                <div class="admin-stat-icon">
+                        <div class="admin-stats">
+                            <div class="stat-card">
+                                <div class="stat-icon">
                                     <i class="fas fa-users"></i>
                                 </div>
-                                <div class="admin-stat-number" id="adminTotalUsers">0</div>
-                                <div class="admin-stat-label">Total Users</div>
+                                <div class="stat-info">
+                                    <h3 id="adminTotalUsers">0</h3>
+                                    <p>Total Users</p>
+                                </div>
                             </div>
-                            <div class="admin-stat-card">
-                                <div class="admin-stat-icon">
+                            <div class="stat-card">
+                                <div class="stat-icon">
                                     <i class="fas fa-user-check"></i>
                                 </div>
-                                <div class="admin-stat-number" id="adminActiveUsers">0</div>
-                                <div class="admin-stat-label">Active Users</div>
+                                <div class="stat-info">
+                                    <h3 id="adminActiveUsers">0</h3>
+                                    <p>Active Users</p>
+                                </div>
                             </div>
-                            <div class="admin-stat-card">
-                                <div class="admin-stat-icon">
+                            <div class="stat-card">
+                                <div class="stat-icon">
                                     <i class="fas fa-comments"></i>
                                 </div>
-                                <div class="admin-stat-number" id="adminTotalMessages">0</div>
-                                <div class="admin-stat-label">Total Messages</div>
+                                <div class="stat-info">
+                                    <h3 id="adminTotalMessages">0</h3>
+                                    <p>Total Messages</p>
+                                </div>
                             </div>
-                            <div class="admin-stat-card">
-                                <div class="admin-stat-icon">
+                            <div class="stat-card">
+                                <div class="stat-icon">
                                     <i class="fas fa-user-friends"></i>
                                 </div>
-                                <div class="admin-stat-number" id="adminTotalConnections">0</div>
-                                <div class="admin-stat-label">Total Connections</div>
+                                <div class="stat-info">
+                                    <h3 id="adminTotalConnections">0</h3>
+                                    <p>Total Connections</p>
+                                </div>
                             </div>
-                            <div class="admin-stat-card">
-                                <div class="admin-stat-icon">
+                            <div class="stat-card">
+                                <div class="stat-icon">
                                     <i class="fas fa-user-plus"></i>
                                 </div>
-                                <div class="admin-stat-number" id="adminNewUsersToday">0</div>
-                                <div class="admin-stat-label">New Users Today</div>
-                            </div>
-                            <div class="admin-stat-card">
-                                <div class="admin-stat-icon">
-                                    <i class="fas fa-flag"></i>
+                                <div class="stat-info">
+                                    <h3 id="adminNewUsersToday">0</h3>
+                                    <p>New Users Today</p>
                                 </div>
-                                <div class="admin-stat-number" id="adminPendingReports">0</div>
-                                <div class="admin-stat-label">Pending Reports</div>
                             </div>
                         </div>
 
@@ -135,112 +129,96 @@
                                 </div>
                             </div>
                         </div>
+                        </div>
                     </section>
 
                     <!-- Users Section -->
-                    <section id="adminUsersSection" class="admin-section">
-                        <h2>User Management</h2>
+                    <section id="adminUsersSection" class="dashboard-section hidden">
+                        <div class="container">
+                            <div class="section-header">
+                                <h2>User Management</h2>
+                                <p>Manage registered users and their accounts</p>
+                            </div>
                         
-                        <!-- User Filters -->
-                        <div class="admin-filters">
-                            <input type="text" id="userSearch" placeholder="Search users..." class="search-input">
-                            <select id="userStatusFilter" class="filter-select">
-                                <option value="all">All Status</option>
-                                <option value="active">Active</option>
-                                <option value="suspended">Suspended</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
-                            <select id="userRoleFilter" class="filter-select">
-                                <option value="all">All Roles</option>
-                                <option value="student">Student</option>
-                                <option value="admin">Admin</option>
-                            </select>
-                        </div>
+                            <!-- User Filters -->
+                            <div class="admin-filters">
+                                <input type="text" id="userSearch" placeholder="Search users..." class="search-input">
+                                <select id="userStatusFilter" class="filter-select">
+                                    <option value="all">All Status</option>
+                                    <option value="active">Active</option>
+                                    <option value="suspended">Suspended</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                                <select id="userRoleFilter" class="filter-select">
+                                    <option value="all">All Roles</option>
+                                    <option value="student">Student</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
 
-                        <!-- Users Table -->
-                        <div class="users-table-container">
-                            <table class="admin-users-table">
-                                <thead>
-                                    <tr>
-                                        <th>User</th>
-                                        <th>University</th>
-                                        <th>Course</th>
-                                        <th>Connections</th>
-                                        <th>Reports</th>
-                                        <th>Status</th>
-                                        <th>Join Date</th>
-                                        <th>Last Active</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="adminUsersTableBody">
-                                    <!-- Users will be loaded here by JavaScript -->
-                                    <tr>
-                                        <td colspan="9" style="text-align: center; padding: 40px;">
-                                            <div class="loading-spinner">Loading users...</div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                            <!-- Users Table -->
+                            <div class="users-table-container">
+                                <table class="admin-users-table">
+                                    <thead>
+                                        <tr>
+                                            <th>User</th>
+                                            <th>University</th>
+                                            <th>Course</th>
+                                            <th>Connections</th>
+                                            <th>Reports</th>
+                                            <th>Status</th>
+                                            <th>Join Date</th>
+                                            <th>Last Active</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="adminUsersTableBody">
+                                        <!-- Users will be loaded here by JavaScript -->
+                                        <tr>
+                                            <td colspan="9" style="text-align: center; padding: 40px;">
+                                                <div class="loading-spinner">Loading users...</div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
 
-                        <!-- Pagination -->
-                        <div class="pagination" id="adminUsersPagination">
-                            <!-- Pagination will be loaded here -->
-                        </div>
-                    </section>
-
-                    <!-- Reports Section -->
-                    <section id="adminReportsSection" class="admin-section">
-                        <h2>Reports Management</h2>
-                        <div class="admin-placeholder">
-                            <i class="fas fa-flag" style="font-size: 48px; color: #e9ecef; margin-bottom: 20px;"></i>
-                            <h3>Reports Management</h3>
-                            <p>This section will display user reports and moderation tools.</p>
-                            <p>Features coming soon:</p>
-                            <ul>
-                                <li>View and manage user reports</li>
-                                <li>Content moderation tools</li>
-                                <li>User suspension management</li>
-                            </ul>
+                            <!-- Pagination -->
+                            <div class="pagination" id="adminUsersPagination">
+                                <!-- Pagination will be loaded here -->
+                            </div>
                         </div>
                     </section>
 
                     <!-- Analytics Section -->
-                    <section id="adminAnalyticsSection" class="admin-section">
-                        <h2>Analytics</h2>
-                        <div class="admin-placeholder">
-                            <i class="fas fa-chart-bar" style="font-size: 48px; color: #e9ecef; margin-bottom: 20px;"></i>
-                            <h3>Platform Analytics</h3>
-                            <p>This section will display detailed analytics and insights.</p>
-                            <p>Features coming soon:</p>
-                            <ul>
-                                <li>User growth charts</li>
-                                <li>Activity trends</li>
-                                <li>Engagement metrics</li>
-                                <li>Performance reports</li>
-                            </ul>
+                    <section id="adminAnalyticsSection" class="dashboard-section hidden">
+                        <div class="container">
+                            <div class="section-header">
+                                <h2>Analytics</h2>
+                                <p>Platform analytics and insights</p>
+                            </div>
+                            <div id="adminAnalyticsContent" class="analytics-container">
+                                <div class="loading-message">
+                                    <i class="fas fa-spinner fa-spin"></i> Loading analytics...
+                                </div>
+                            </div>
                         </div>
                     </section>
 
                     <!-- Settings Section -->
-                    <section id="adminSettingsSection" class="admin-section">
-                        <h2>Admin Settings</h2>
-                        <div class="admin-placeholder">
-                            <i class="fas fa-cog" style="font-size: 48px; color: #e9ecef; margin-bottom: 20px;"></i>
-                            <h3>Administrator Settings</h3>
-                            <p>This section will contain platform configuration options.</p>
-                            <p>Features coming soon:</p>
-                            <ul>
-                                <li>Platform settings</li>
-                                <li>User role management</li>
-                                <li>System configuration</li>
-                                <li>Backup and export tools</li>
-                            </ul>
+                    <section id="adminSettingsSection" class="dashboard-section hidden">
+                        <div class="container">
+                            <div class="section-header">
+                                <h2>Admin Settings</h2>
+                                <p>Configure platform settings and preferences</p>
+                            </div>
+                            <div id="adminSettingsContent" class="settings-container">
+                                <div class="loading-message">
+                                    <i class="fas fa-spinner fa-spin"></i> Loading settings...
+                                </div>
+                            </div>
                         </div>
                     </section>
-                </div>
-            </div>
         </div>
     </main>
 
