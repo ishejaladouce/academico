@@ -1,4 +1,4 @@
-// Admin Dashboard Management with Real Data
+// Admin Dashboard Management with Real Data from Firebase
 class AdminDashboard {
   constructor() {
     this.stats = {
@@ -9,7 +9,40 @@ class AdminDashboard {
       newUsersToday: 0,
       pendingReports: 0,
     };
-    this.apiBaseUrl = "http://localhost:3000/api";
+    this.db = null;
+  }
+
+  async ensureFirebase() {
+    if (this.db) return this.db;
+
+    // Wait for Firebase to be available
+    let attempts = 0;
+    while (typeof firebase === "undefined" && attempts < 10) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      attempts++;
+    }
+
+    if (typeof firebase !== "undefined" && firebase.firestore) {
+      const firebaseConfig = window.__ACADEMICO_CONFIG && window.__ACADEMICO_CONFIG.firebase;
+      if (!firebaseConfig) {
+        throw new Error("Firebase configuration is missing!");
+      }
+      
+      // Initialize Firebase if not already initialized
+      try {
+        firebase.initializeApp(firebaseConfig);
+      } catch (error) {
+        // Firebase might already be initialized
+        if (!error.code || error.code !== 'app/duplicate-app') {
+          console.warn("Firebase initialization warning:", error);
+        }
+      }
+      
+      this.db = firebase.firestore();
+      return this.db;
+    }
+
+    throw new Error("Firebase Firestore not available");
   }
 
   async init() {
@@ -132,15 +165,45 @@ class AdminDashboard {
   async loadAdminStats() {
     try {
       this.showLoading("stats");
-      const statsData = await this.apiCall("/admin/stats");
+      
+      // Load real stats from Firestore
+      await this.ensureFirebase();
+      
+      if (!this.db) {
+        throw new Error("Database not available");
+      }
+
+      const [usersSnapshot, connectionsSnapshot, conversationsSnapshot] = await Promise.all([
+        this.db.collection("users").get(),
+        this.db.collection("connections").get(),
+        this.db.collection("conversations").get(),
+      ]);
+
+      const totalUsers = usersSnapshot.size;
+      const activeUsers = usersSnapshot.docs.filter(doc => !doc.data().deleted).length;
+      const totalConnections = connectionsSnapshot.docs.filter(doc => doc.data().status === "accepted").length;
+      
+      let totalMessages = 0;
+      conversationsSnapshot.forEach(doc => {
+        totalMessages += doc.data().messageCount || 0;
+      });
+
+      // Count new users today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const newUsersToday = usersSnapshot.docs.filter(doc => {
+        const userData = doc.data();
+        const createdAt = userData.createdAt && userData.createdAt.toDate ? userData.createdAt.toDate() : new Date(userData.createdAt || 0);
+        return createdAt >= today && !doc.data().deleted;
+      }).length;
 
       this.stats = {
-        totalUsers: statsData.totalUsers || 0,
-        activeUsers: statsData.activeUsers || 0,
-        totalMessages: statsData.totalMessages || 0,
-        totalConnections: statsData.totalConnections || 0,
-        newUsersToday: statsData.newUsersToday || 0,
-        pendingReports: statsData.pendingReports || 0,
+        totalUsers,
+        activeUsers,
+        totalMessages,
+        totalConnections,
+        newUsersToday,
+        pendingReports: 0, // Can be implemented later if needed
       };
 
       this.updateStatsUI();
@@ -169,10 +232,79 @@ class AdminDashboard {
 
   async loadRecentActivities() {
     try {
-      const activities = await this.apiCall("/admin/activities");
-      this.displayRecentActivities(activities);
+      // Load recent activities from Firestore - dynamic data only
+      await this.ensureFirebase();
+      
+      if (!this.db) {
+        console.warn("Database not available for activities");
+        const container = document.getElementById("recentActivities");
+        if (container) {
+          container.innerHTML = '<div class="no-data">Unable to load activities</div>';
+        }
+        return;
+      }
+
+      const activities = [];
+
+      // Get recent user registrations (last 3)
+      try {
+        const usersSnapshot = await this.db
+          .collection("users")
+          .orderBy("createdAt", "desc")
+          .limit(3)
+          .get();
+
+        usersSnapshot.forEach(doc => {
+          const userData = doc.data();
+          if (!userData.deleted) {
+            const createdAt = userData.createdAt && userData.createdAt.toDate ? userData.createdAt.toDate() : new Date(userData.createdAt || Date.now());
+            activities.push({
+              id: doc.id,
+              type: "user_signup",
+              description: `New user registered: ${userData.name || "Student"}`,
+              timestamp: createdAt,
+              user: { name: userData.name, id: doc.id },
+            });
+          }
+        });
+      } catch (userError) {
+        console.warn("Error loading user activities:", userError);
+      }
+
+      // Get recent connections (last 2)
+      try {
+        const connectionsSnapshot = await this.db
+          .collection("connections")
+          .where("status", "==", "accepted")
+          .orderBy("updatedAt", "desc")
+          .limit(2)
+          .get();
+
+        connectionsSnapshot.forEach(doc => {
+          const connData = doc.data();
+          const updatedAt = connData.updatedAt && connData.updatedAt.toDate ? connData.updatedAt.toDate() : new Date(connData.updatedAt || Date.now());
+          activities.push({
+            id: doc.id,
+            type: "connection_made",
+            description: `${connData.requesterName || "User"} connected with ${connData.receiverName || "User"}`,
+            timestamp: updatedAt,
+          });
+        });
+      } catch (connError) {
+        console.warn("Error loading connection activities:", connError);
+      }
+
+      // Sort by timestamp (most recent first) and take top 5
+      activities.sort((a, b) => b.timestamp - a.timestamp);
+      const recentActivities = activities.slice(0, 5);
+
+      this.displayRecentActivities(recentActivities);
     } catch (error) {
       console.error("Error loading recent activities:", error);
+      const container = document.getElementById("recentActivities");
+      if (container) {
+        container.innerHTML = '<div class="no-data">Unable to load activities</div>';
+      }
     }
   }
 

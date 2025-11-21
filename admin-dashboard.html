@@ -76,42 +76,42 @@
                                 <div class="admin-stat-icon">
                                     <i class="fas fa-users"></i>
                                 </div>
-                                <div class="admin-stat-number" id="adminTotalUsers">156</div>
+                                <div class="admin-stat-number" id="adminTotalUsers">0</div>
                                 <div class="admin-stat-label">Total Users</div>
                             </div>
                             <div class="admin-stat-card">
                                 <div class="admin-stat-icon">
                                     <i class="fas fa-user-check"></i>
                                 </div>
-                                <div class="admin-stat-number" id="adminActiveUsers">89</div>
+                                <div class="admin-stat-number" id="adminActiveUsers">0</div>
                                 <div class="admin-stat-label">Active Users</div>
                             </div>
                             <div class="admin-stat-card">
                                 <div class="admin-stat-icon">
                                     <i class="fas fa-comments"></i>
                                 </div>
-                                <div class="admin-stat-number" id="adminTotalMessages">1,247</div>
+                                <div class="admin-stat-number" id="adminTotalMessages">0</div>
                                 <div class="admin-stat-label">Total Messages</div>
                             </div>
                             <div class="admin-stat-card">
                                 <div class="admin-stat-icon">
                                     <i class="fas fa-user-friends"></i>
                                 </div>
-                                <div class="admin-stat-number" id="adminTotalConnections">423</div>
+                                <div class="admin-stat-number" id="adminTotalConnections">0</div>
                                 <div class="admin-stat-label">Total Connections</div>
                             </div>
                             <div class="admin-stat-card">
                                 <div class="admin-stat-icon">
                                     <i class="fas fa-user-plus"></i>
                                 </div>
-                                <div class="admin-stat-number" id="adminNewUsersToday">12</div>
+                                <div class="admin-stat-number" id="adminNewUsersToday">0</div>
                                 <div class="admin-stat-label">New Users Today</div>
                             </div>
                             <div class="admin-stat-card">
                                 <div class="admin-stat-icon">
                                     <i class="fas fa-flag"></i>
                                 </div>
-                                <div class="admin-stat-number" id="adminPendingReports">5</div>
+                                <div class="admin-stat-number" id="adminPendingReports">0</div>
                                 <div class="admin-stat-label">Pending Reports</div>
                             </div>
                         </div>
@@ -130,32 +130,8 @@
                         <div class="recent-activities">
                             <h3>Recent Activities</h3>
                             <div id="recentActivities">
-                                <div class="activity-item">
-                                    <div class="activity-icon">
-                                        <i class="fas fa-user-plus"></i>
-                                    </div>
-                                    <div class="activity-content">
-                                        <p class="activity-description">New user registered: Sarah Johnson</p>
-                                        <span class="activity-time">30 minutes ago</span>
-                                    </div>
-                                </div>
-                                <div class="activity-item">
-                                    <div class="activity-icon">
-                                        <i class="fas fa-user-friends"></i>
-                                    </div>
-                                    <div class="activity-content">
-                                        <p class="activity-description">Alex Chen connected with Maria Garcia</p>
-                                        <span class="activity-time">45 minutes ago</span>
-                                    </div>
-                                </div>
-                                <div class="activity-item">
-                                    <div class="activity-icon">
-                                        <i class="fas fa-comments"></i>
-                                    </div>
-                                    <div class="activity-content">
-                                        <p class="activity-description">Study group formed for Calculus</p>
-                                        <span class="activity-time">2 hours ago</span>
-                                    </div>
+                                <div class="loading-message">
+                                    <i class="fas fa-spinner fa-spin"></i> Loading recent activities...
                                 </div>
                             </div>
                         </div>
@@ -269,19 +245,35 @@
     </main>
 
     <!-- Scripts -->
+    <script src="config.js"></script>
+    <script>
+      if (!window.__ACADEMICO_CONFIG) {
+        document.body.innerHTML =
+          "<main style='padding:40px;font-family:Arial,sans-serif;max-width:640px;margin:auto;text-align:center'>"+
+          "<h1>Configuration Missing</h1>"+
+          "<p>Please create <code>config.js</code> from <code>config.example.js</code> and reload this page.</p>"+
+          "</main>";
+      }
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+    <script src="js/errorHandler.js"></script>
+    <script src="js/auth.js"></script>
     <script src="js/admin-auth.js"></script>
-    <script src="js/admin-dashboard.js"></script>
     <script src="js/admin-users.js"></script>
+    <script src="js/admin-dashboard.js"></script>
     
     <script>
         // Initialize admin dashboard
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Initializing admin dashboard...');
-            if (typeof adminDashboard !== 'undefined') {
-                adminDashboard.init();
-            } else {
-                console.error('Admin dashboard not loaded!');
-            }
+            setTimeout(function() {
+                if (typeof adminDashboard !== 'undefined') {
+                    adminDashboard.init();
+                } else {
+                    console.error('Admin dashboard not loaded!');
+                }
+            }, 200);
         });
     </script>
 </body>
