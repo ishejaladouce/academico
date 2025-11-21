@@ -13,7 +13,7 @@ Thumbs.db
 .idea
 .vscode
 
-# API KEYS & SECURITY (RUBRIC: Secure handling)
+# API KEYS & SECURITY
 config.js
 config.example.js
 .env
