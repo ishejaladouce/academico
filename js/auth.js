@@ -3,22 +3,21 @@ class AuthManager {
   constructor() {
     this.db = null;
     this.currentUser = null;
+    this.firebaseConfig = window.__ACADEMICO_CONFIG?.firebase;
+    if (!this.firebaseConfig) {
+      console.error(
+        "Firebase configuration missing. Please update config.js with your credentials."
+      );
+    }
     this.init();
   }
 
   async init() {
     await this.loadFirebase();
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAuAmhkTWhWWUmJvdBYBydE8Wly0ZNHTBY",
-      authDomain: "academico-chat.firebaseapp.com",
-      projectId: "academico-chat",
-      storageBucket: "academico-chat.firebasestorage.app",
-      messagingSenderId: "786614809148",
-      appId: "1:786614809148:web:31eada9340cb351f6b8939",
-    };
-
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) {
+      firebase.initializeApp(this.firebaseConfig);
+    }
     this.db = firebase.firestore();
     console.log("AcademicO Auth Ready");
   }
@@ -52,20 +51,23 @@ class AuthManager {
         throw new Error("Password is required");
       }
 
+      const passwordHash = await this.hashPassword(userData.password);
       const userRef = this.db.collection("users").doc();
       const user = {
         id: userRef.id,
         name: userData.name || "",
         email: userData.email || "",
-        password: userData.password, // This should now be defined
+        passwordHash,
         country: userData.country || "",
         countryCode: userData.countryCode || "",
         university: userData.university || "",
         course: userData.course || "",
+        courseKeywords: this.buildKeywords(userData.course),
         availability: userData.availability || "flexible",
         studyType: userData.studyType || "group",
         topic: userData.topic || "General",
-        createdAt: new Date(),
+        topicKeywords: this.buildKeywords(userData.topic),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         isAdmin: userData.email
           ? userData.email.includes("admin@academico.com")
           : false,
@@ -77,7 +79,8 @@ class AuthManager {
 
       // Store user in localStorage for session management (without password for security)
       const userForStorage = { ...user };
-      delete userForStorage.password; // Don't store password in localStorage
+      userForStorage.createdAt = new Date().toISOString();
+      delete userForStorage.passwordHash;
 
       localStorage.setItem(
         "academico_current_user",
@@ -109,16 +112,21 @@ class AuthManager {
       const userDoc = snapshot.docs[0];
       const user = userDoc.data();
 
-      // FIXED: Validate password
-      if (!user.password || user.password !== password) {
+      const hashedInput = await this.hashPassword(password);
+
+      if (!user.passwordHash || user.passwordHash !== hashedInput) {
         throw new Error("Invalid password");
       }
 
       // Store user in localStorage for session management
-      localStorage.setItem("academico_current_user", JSON.stringify(user));
-      this.currentUser = user;
+      const sanitizedUser = this.sanitizeUser(user);
+      localStorage.setItem(
+        "academico_current_user",
+        JSON.stringify(sanitizedUser)
+      );
+      this.currentUser = sanitizedUser;
 
-      return user;
+      return sanitizedUser;
     } catch (error) {
       console.error("Login error:", error);
       throw error;
@@ -129,19 +137,17 @@ class AuthManager {
   async searchUsers(filters) {
     try {
       let query = this.db.collection("users");
+      const normalizedCourse = filters.course
+        ? filters.course.trim().toLowerCase()
+        : "";
 
-      // Apply filters
-      if (filters.course) {
-        query = query.where("course", "==", filters.course);
-      }
-      if (filters.availability && filters.availability !== "") {
-        query = query.where("availability", "==", filters.availability);
-      }
-      if (filters.studyType && filters.studyType !== "") {
-        query = query.where("studyType", "==", filters.studyType);
+      if (normalizedCourse) {
+        query = query.where("courseKeywords", "array-contains", normalizedCourse);
+      } else {
+        query = query.orderBy("createdAt", "desc");
       }
 
-      const snapshot = await query.limit(20).get();
+      const snapshot = await query.limit(50).get();
       const users = [];
 
       snapshot.forEach((doc) => {
@@ -156,9 +162,7 @@ class AuthManager {
       return this.applyAdditionalFilters(users, filters);
     } catch (error) {
       console.error("Search error:", error);
-
-      // Return demo data if search fails with enhanced filtering
-      return this.applyAdditionalFilters(this.getDemoUsers(), filters);
+      throw error;
     }
   }
 
@@ -199,91 +203,15 @@ class AuthManager {
   // Get all users for admin dashboard
   async getAllUsers() {
     try {
-      const snapshot = await this.db.collection("users").get();
-      const users = [];
-
-      snapshot.forEach((doc) => {
-        users.push(doc.data());
-      });
-
-      return users;
+      const snapshot = await this.db.collection("users").limit(200).get();
+      return snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
     } catch (error) {
       console.error("Error getting all users:", error);
-      return this.getDemoUsers();
+      throw error;
     }
-  }
-
-  // Demo users for fallback - ENHANCED with more data
-  getDemoUsers() {
-    const demoUsers = [
-      {
-        id: "demo-1",
-        name: "Alex Johnson",
-        email: "alex.johnson@university.edu",
-        university: "University of Rwanda",
-        country: "Rwanda",
-        countryCode: "RW",
-        course: "Computer Science",
-        availability: "evening",
-        studyType: "group",
-        topic: "Web Development",
-        lastActive: "2 hours ago",
-      },
-      {
-        id: "demo-2",
-        name: "Sarah Chen",
-        email: "sarah.chen@university.edu",
-        university: "University of Nairobi",
-        country: "Kenya",
-        countryCode: "KE",
-        course: "Mathematics",
-        availability: "afternoon",
-        studyType: "pair",
-        topic: "Calculus",
-        lastActive: "Online now",
-      },
-      {
-        id: "demo-3",
-        name: "Mike Davis",
-        email: "mike.davis@university.edu",
-        university: "Makerere University",
-        country: "Uganda",
-        countryCode: "UG",
-        course: "Computer Science",
-        availability: "morning",
-        studyType: "project",
-        topic: "Data Structures",
-        lastActive: "1 hour ago",
-      },
-      {
-        id: "demo-4",
-        name: "Emma Wilson",
-        email: "emma.wilson@university.edu",
-        university: "University of Dar es Salaam",
-        country: "Tanzania",
-        countryCode: "TZ",
-        course: "Physics",
-        availability: "weekend",
-        studyType: "group",
-        topic: "Quantum Mechanics",
-        lastActive: "30 minutes ago",
-      },
-      {
-        id: "demo-5",
-        name: "David Kim",
-        email: "david.kim@university.edu",
-        university: "University of Ghana",
-        country: "Ghana",
-        countryCode: "GH",
-        course: "Computer Science",
-        availability: "evening",
-        studyType: "pair",
-        topic: "Algorithms",
-        lastActive: "5 hours ago",
-      },
-    ];
-
-    return demoUsers;
   }
 
   // Get current user
@@ -315,7 +243,18 @@ class AuthManager {
   // Update user profile
   async updateUserProfile(userId, updates) {
     try {
-      await this.db.collection("users").doc(userId).update(updates);
+      const normalizedUpdates = {
+        ...updates,
+      };
+
+      if (updates.course) {
+        normalizedUpdates.courseKeywords = this.buildKeywords(updates.course);
+      }
+      if (updates.topic) {
+        normalizedUpdates.topicKeywords = this.buildKeywords(updates.topic);
+      }
+
+      await this.db.collection("users").doc(userId).update(normalizedUpdates);
 
       // Update current user data
       if (this.currentUser && this.currentUser.id === userId) {
@@ -331,6 +270,30 @@ class AuthManager {
       console.error("Profile update error:", error);
       throw error;
     }
+  }
+
+  async hashPassword(password) {
+    if (!window.crypto || !window.crypto.subtle) {
+      return password;
+    }
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  buildKeywords(value = "") {
+    if (!value) return [];
+    const base = value.trim().toLowerCase();
+    const parts = base.split(/[^\w]+/).filter(Boolean);
+    return Array.from(new Set([base, ...parts]));
+  }
+
+  sanitizeUser(user) {
+    const sanitized = { ...user };
+    delete sanitized.passwordHash;
+    return sanitized;
   }
 }
 

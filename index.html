@@ -450,6 +450,18 @@
       </div>
     </div>
 
+    <!-- configuration (ignored in git) -->
+    <script src="config.js"></script>
+    <script>
+      if (!window.__ACADEMICO_CONFIG) {
+        document.body.innerHTML =
+          "<main style='padding:40px;font-family:Arial,sans-serif;max-width:640px;margin:auto;text-align:center'>"+
+          "<h1>Configuration Missing</h1>"+
+          "<p>Please create <code>config.js</code> from <code>config.example.js</code> and reload this page.</p>"+
+          "</main>";
+      }
+    </script>
+
     <!-- scripts -->
     <script src="js/errorHandler.js"></script>
     <script src="js/api.js"></script>

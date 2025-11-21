@@ -1,5 +1,21 @@
+# Environment & local config
+config.js
+.env
+
+# Dependencies / tooling
+node_modules
+dist
+build
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.idea
+.vscode
+
 # API KEYS & SECURITY (RUBRIC: Secure handling)
 config.js
+config.example.js
 .env
 *.key
 secrets.*

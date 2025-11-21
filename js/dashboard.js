@@ -6,6 +6,12 @@ class DashboardApp {
     this.messagesManager = null;
     this.connectionsManager = null;
     this.isInitialized = false;
+    this.connectionState = {
+      accepted: [],
+      pendingIncoming: [],
+      pendingOutgoing: [],
+    };
+    this.activeConversationId = null;
   }
 
   async init() {
@@ -49,10 +55,24 @@ class DashboardApp {
       if (typeof messagesManager !== "undefined") {
         this.messagesManager = messagesManager;
         console.log("Messages manager initialized");
+        this.messagesManager.onConversationsUpdate((conversations) => {
+          this.displayConversations(conversations);
+        });
+        this.messagesManager.onMessagesUpdate((messages, conversationId) => {
+          if (conversationId === this.activeConversationId) {
+            this.displayMessages(messages);
+          }
+        });
       }
       if (typeof connectionsManager !== "undefined") {
         this.connectionsManager = connectionsManager;
         console.log("Connections manager initialized");
+        this.connectionsManager.onChange((grouped) => {
+          this.connectionState = grouped;
+          this.displayConnections(grouped.accepted);
+          this.displayPendingRequests(grouped.pendingIncoming);
+          this.displaySentRequests(grouped.pendingOutgoing);
+        });
       }
     } catch (error) {
       console.log("Managers not available:", error);
@@ -244,202 +264,58 @@ class DashboardApp {
   async loadCountries() {
     console.log("Loading countries...");
     try {
-      const countryFilter = document.getElementById("countryFilter");
-      if (countryFilter) {
-        // Clear existing options
-        countryFilter.innerHTML = '<option value="">All Countries</option>';
-
-        // Use the countries from your countries.js service
-        if (window.countriesService && window.countriesService.countries) {
-          window.countriesService.countries.forEach((country) => {
-            const option = document.createElement("option");
-            option.value = country.code;
-            option.textContent = country.name;
-            countryFilter.appendChild(option);
-          });
-          console.log("Countries loaded from countriesService");
-        } else {
-          // Fallback countries
-          const fallbackCountries = [
-            { code: "RW", name: "Rwanda" },
-            { code: "KE", name: "Kenya" },
-            { code: "UG", name: "Uganda" },
-            { code: "TZ", name: "Tanzania" },
-            { code: "US", name: "United States" },
-            { code: "GB", name: "United Kingdom" },
-            { code: "CA", name: "Canada" },
-            { code: "ZA", name: "South Africa" },
-            { code: "NG", name: "Nigeria" },
-            { code: "GH", name: "Ghana" },
-          ];
-
-          fallbackCountries.forEach((country) => {
-            const option = document.createElement("option");
-            option.value = country.code;
-            option.textContent = country.name;
-            countryFilter.appendChild(option);
-          });
-          console.log("Countries loaded from fallback data");
-        }
-      }
+      await countriesService.populateCountryDropdown("countryFilter", {
+        placeholder: "All Countries",
+        includeAllOption: true,
+      });
+      console.log("Country filter hydrated via API");
     } catch (error) {
       console.error("Error loading countries:", error);
     }
   }
 
   async loadUniversities() {
-    console.log("Loading universities...");
-    try {
-      const universityFilter = document.getElementById("universityFilter");
-      if (universityFilter) {
-        // Start with default option
-        universityFilter.innerHTML =
-          '<option value="">All Universities</option>';
-
-        // Add some common universities
-        const commonUniversities = [
-          "University of Rwanda",
-          "University of Nairobi",
-          "Makerere University",
-          "University of Dar es Salaam",
-          "University of Ghana",
-          "University of Cape Town",
-          "Stanford University",
-          "Harvard University",
-          "Massachusetts Institute of Technology",
-          "University of Lagos",
-          "University of Ibadan",
-        ];
-
-        commonUniversities.forEach((uni) => {
-          const option = document.createElement("option");
-          option.value = uni;
-          option.textContent = uni;
-          universityFilter.appendChild(option);
-        });
-
-        console.log("Universities loaded successfully");
-      }
-    } catch (error) {
-      console.error("Error loading universities:", error);
+    const universityFilter = document.getElementById("universityFilter");
+    if (universityFilter) {
+      universityFilter.innerHTML =
+        '<option value="">Select a country first</option>';
     }
   }
 
   async handleCountryChange(countryCode) {
     console.log("Country changed to:", countryCode);
+    const universityFilter = document.getElementById("universityFilter");
+
+    if (!universityFilter) return;
+
     if (!countryCode) {
-      this.loadUniversities(); // Reset to all universities
+      universityFilter.innerHTML =
+        '<option value="">Select a country first</option>';
+      this.handleSearchUniversityChange("");
       return;
     }
 
+    universityFilter.innerHTML =
+      '<option value="">Loading universities...</option>';
+
     try {
-      const universityFilter = document.getElementById("universityFilter");
-      if (universityFilter) {
-        universityFilter.innerHTML =
-          '<option value="">Loading universities...</option>';
-
-        // Get country name
-        const countryName = this.getCountryName(countryCode);
-
-        // Simulate API call with timeout
-        setTimeout(() => {
-          this.populateUniversitiesByCountry(countryName);
-        }, 500);
-      }
+      const universitiesData = await universitiesService.loadUniversities(
+        countryCode
+      );
+      universitiesService.populateUniversityDropdown(
+        "universityFilter",
+        universitiesData.universities,
+        {
+          placeholder: "All Universities",
+          includeAllOption: true,
+          includeOtherOption: true,
+        }
+      );
     } catch (error) {
-      console.error("Error handling country change:", error);
-      this.loadUniversities(); // Reset on error
+      console.error("Error loading universities for country:", error);
+      universityFilter.innerHTML =
+        '<option value="">Unable to load universities</option>';
     }
-  }
-
-  populateUniversitiesByCountry(countryName) {
-    const universityFilter = document.getElementById("universityFilter");
-    if (!universityFilter) return;
-
-    // University data by country
-    const universitiesByCountry = {
-      Rwanda: [
-        "University of Rwanda",
-        "Kigali Independent University",
-        "Adventist University of Central Africa",
-        "University of Kigali",
-        "Institut d'Enseignement Supérieur de Ruhengeri",
-      ],
-      Kenya: [
-        "University of Nairobi",
-        "Kenyatta University",
-        "Strathmore University",
-        "Moi University",
-        "Jomo Kenyatta University of Agriculture and Technology",
-      ],
-      Uganda: [
-        "Makerere University",
-        "Kyambogo University",
-        "Uganda Christian University",
-        "Kampala International University",
-        "Uganda Martyrs University",
-      ],
-      Tanzania: [
-        "University of Dar es Salaam",
-        "Nelson Mandela African Institution of Science and Technology",
-        "University of Dodoma",
-        "Sokoine University of Agriculture",
-        "Ardhi University",
-      ],
-      Ghana: [
-        "University of Ghana",
-        "Kwame Nkrumah University of Science and Technology",
-        "University of Cape Coast",
-        "University of Education, Winneba",
-      ],
-      Nigeria: [
-        "University of Lagos",
-        "University of Ibadan",
-        "University of Nigeria",
-        "Obafemi Awolowo University",
-      ],
-      "South Africa": [
-        "University of Cape Town",
-        "University of Witwatersrand",
-        "University of Pretoria",
-        "Stellenbosch University",
-      ],
-    };
-
-    universityFilter.innerHTML = '<option value="">All Universities</option>';
-
-    const universities = universitiesByCountry[countryName] || [
-      "Local University",
-      "Community College",
-      "Technical Institute",
-    ];
-
-    universities.forEach((uni) => {
-      const option = document.createElement("option");
-      option.value = uni;
-      option.textContent = uni;
-      universityFilter.appendChild(option);
-    });
-
-    console.log(
-      `Loaded ${universities.length} universities for ${countryName}`
-    );
-  }
-
-  getCountryName(countryCode) {
-    const countryMap = {
-      RW: "Rwanda",
-      KE: "Kenya",
-      UG: "Uganda",
-      TZ: "Tanzania",
-      US: "United States",
-      GB: "United Kingdom",
-      CA: "Canada",
-      ZA: "South Africa",
-      NG: "Nigeria",
-      GH: "Ghana",
-    };
-    return countryMap[countryCode] || "Unknown Country";
   }
 
   // ==================== ENHANCED SEARCH FUNCTIONALITY ====================
@@ -467,41 +343,11 @@ class DashboardApp {
     this.showLoading("Searching for study partners...");
 
     try {
-      let searchResults = [];
-
-      // Use authManager for search (it has the enhanced filtering)
-      if (typeof authManager !== "undefined") {
-        searchResults = await authManager.searchUsers(filters);
-      } else {
-        // Enhanced demo filtering
-        searchResults = this.getDemoConnections().filter((conn) => {
-          const matchesCourse =
-            !filters.course ||
-            (conn.course &&
-              conn.course.toLowerCase().includes(filters.course.toLowerCase()));
-          const matchesTopic =
-            !filters.topic ||
-            (conn.topic &&
-              conn.topic.toLowerCase().includes(filters.topic.toLowerCase()));
-          const matchesCountry =
-            !filters.country || conn.countryCode === filters.country;
-          const matchesUniversity =
-            !filters.university || conn.university === filters.university;
-          const matchesAvailability =
-            !filters.availability || conn.availability === filters.availability;
-          const matchesStudyType =
-            !filters.studyType || conn.studyType === filters.studyType;
-
-          return (
-            matchesCourse &&
-            matchesTopic &&
-            matchesCountry &&
-            matchesUniversity &&
-            matchesAvailability &&
-            matchesStudyType
-          );
-        });
+      if (typeof authManager === "undefined") {
+        throw new Error("Authentication service unavailable");
       }
+
+      const searchResults = await authManager.searchUsers(filters);
 
       console.log("Search results:", searchResults.length, "partners found");
 
@@ -545,6 +391,20 @@ class DashboardApp {
         .map((user) => {
           const matchScore = Math.floor(Math.random() * 30) + 70;
           const isOnline = Math.random() > 0.5;
+          const payload = encodeURIComponent(
+            JSON.stringify({
+              id: user.id,
+              name: user.name,
+              university: user.university,
+              course: user.course,
+              availability: user.availability,
+              studyType: user.studyType,
+              country: user.country,
+              countryCode: user.countryCode,
+              topic: user.topic,
+              email: user.email,
+            })
+          );
 
           return `
         <div class="partner-card">
@@ -576,19 +436,13 @@ class DashboardApp {
             <div class="detail-item"><strong>Country:</strong> ${
               user.country || "Not specified"
             }</div>
-            <div class="last-active">Last active: ${
-              user.lastActive || "Recently"
-            }</div>
+            <div class="last-active">Last active: Recently</div>
           </div>
           <div class="partner-actions">
-            <button class="action-btn chat-btn" onclick="dashboard.startDynamicChat('${
-              user.id
-            }', '${user.name}')">
+            <button class="action-btn chat-btn" onclick="dashboard.startDynamicChat('${payload}')">
               Start Chat
             </button>
-            <button class="action-btn connect-btn" onclick="dashboard.sendConnectionRequest('${
-              user.id
-            }')">
+            <button class="action-btn connect-btn" onclick="dashboard.sendConnectionRequest('${payload}')">
               Connect
             </button>
           </div>
@@ -599,30 +453,31 @@ class DashboardApp {
     }
   }
 
-  // Add this new method for dynamic chat starting
-  startDynamicChat(userId, userName) {
-    console.log("Starting dynamic chat with:", userName);
+  async startDynamicChat(encodedPartner) {
+    try {
+      const partner = JSON.parse(decodeURIComponent(encodedPartner));
+      const currentUser = authManager.getCurrentUser();
 
-    const currentUser = authManager.getCurrentUser();
-    if (!currentUser) {
-      alert("Please log in to start chatting");
-      return;
-    }
+      if (!currentUser) {
+        errorHandler.showUserError("Please log in to start chatting");
+        return;
+      }
 
-    if (window.chatService) {
-      // Start chat using the enhanced service
-      window.chatService.startChat(currentUser, { id: userId, name: userName });
+      if (!this.messagesManager) {
+        errorHandler.showUserError("Messaging service unavailable");
+        return;
+      }
 
-      // Switch to messages section
+      const conversationId = await this.messagesManager.startChat(partner);
+      this.activeConversationId = conversationId;
       this.showSection("messagesSection");
-
-      // Show success message
-      errorHandler.showSuccess(
-        `Chat started with ${userName}! They will receive a notification.`
+      this.openConversation(conversationId, partner.name || "Study Partner");
+      errorHandler.showSuccess(`Chat started with ${partner.name || "student"}`);
+    } catch (error) {
+      console.error("Error starting chat:", error);
+      errorHandler.showUserError(
+        "Unable to start chat right now. Please try again."
       );
-    } else {
-      // Fallback
-      this.startChat(userId, userName);
     }
   }
 
@@ -694,37 +549,11 @@ class DashboardApp {
     }
   }
 
-  // Start chat with actual match from search results
-  startDynamicChat(userId, userName) {
-    console.log("Starting dynamic chat with actual match:", userName);
-
-    const currentUser = authManager.getCurrentUser();
-    if (!currentUser) {
-      alert("Please log in to start chatting");
-      return;
-    }
-
-    if (window.chatService) {
-      // Find the actual user data to pass to chat service
-      const demoUsers = authManager.getDemoUsers();
-      const matchUser = demoUsers.find((user) => user.id === userId) || {
-        id: userId,
-        name: userName,
-      };
-
-      window.chatService.startChat(currentUser, matchUser);
-      this.showSection("messagesSection");
-      errorHandler.showSuccess(
-        `Chat started with ${userName}! You'll see their messages here.`
-      );
-    } else {
-      this.startChat(userId, userName);
-    }
-  }
-  displayConversations(conversations) {
+  displayConversations(conversations = []) {
     const conversationsList = document.getElementById("conversationsList");
+    if (!conversationsList) return;
 
-    if (conversations.length === 0) {
+    if (!conversations.length) {
       conversationsList.innerHTML = `
         <div class="no-conversations">
           <i class="fas fa-comments"></i>
@@ -732,69 +561,70 @@ class DashboardApp {
           <p class="small">Start a chat with your study partners!</p>
         </div>
       `;
-    } else {
-      const conversationsHTML = conversations
-        .map(
-          (conv) => `
-        <div class="conversation-item" data-conversation-id="${
-          conv.id
-        }" data-partner-id="${conv.partnerId}">
-          <div class="conversation-avatar">${
-            conv.partnerAvatar ||
-            (conv.partnerName ? conv.partnerName.charAt(0) : "U")
-          }</div>
+      return;
+    }
+
+    conversationsList.innerHTML = conversations
+      .map((conv) => {
+        const partnerId = conv.participants?.find(
+          (id) => id !== this.currentUser?.id
+        );
+        const partnerDetails =
+          conv.participantDetails?.[partnerId] || { name: "Study Partner" };
+        const partnerName = partnerDetails.name || "Study Partner";
+        const partnerUniversity = partnerDetails.university || "Not specified";
+        const partnerCourse = partnerDetails.course || "Not specified";
+        const lastMessagePreview = conv.lastMessage || "Start a conversation";
+        const updatedAt = conv.updatedAt?.toDate
+          ? conv.updatedAt.toDate()
+          : conv.updatedAt
+          ? new Date(conv.updatedAt)
+          : null;
+        const hasUnread =
+          conv.lastSenderId && conv.lastSenderId !== this.currentUser?.id;
+
+        return `
+        <div class="conversation-item ${
+          this.activeConversationId === conv.id ? "active" : ""
+        }" 
+             data-conversation-id="${conv.id}" 
+             data-partner-id="${partnerId || ""}"
+             data-partner-name="${partnerName}">
+          <div class="conversation-avatar">
+            ${partnerName.charAt(0).toUpperCase()}
+          </div>
           <div class="conversation-info">
-            <div class="conversation-name">${conv.partnerName}</div>
-            <div class="conversation-preview">${
-              conv.lastMessage || "Start a conversation"
-            }</div>
+            <div class="conversation-name">${partnerName}</div>
+            <div class="conversation-preview">${lastMessagePreview}</div>
             <div class="conversation-details">
-              <span class="conversation-course">${
-                conv.partnerCourse || "Not specified"
-              }</span>
-              <span class="conversation-university">${
-                conv.partnerUniversity || "Not specified"
-              }</span>
+              <span class="conversation-course">${partnerCourse}</span>
+              <span class="conversation-university">${partnerUniversity}</span>
             </div>
           </div>
           <div class="conversation-meta">
-            <div class="conversation-time">${this.formatTime(
-              conv.lastMessageTime
-            )}</div>
-            ${
-              conv.unreadCount > 0
-                ? `<div class="unread-badge">${conv.unreadCount}</div>`
-                : ""
-            }
+            <div class="conversation-time">${updatedAt ? this.formatTime(updatedAt) : "Just now"}</div>
+            ${hasUnread ? `<div class="unread-badge">1</div>` : ""}
           </div>
         </div>
-      `
-        )
-        .join("");
+      `;
+      })
+      .join("");
 
-      conversationsList.innerHTML = conversationsHTML;
-
-      const conversationItems =
-        conversationsList.querySelectorAll(".conversation-item");
-      console.log(
-        "Number of conversation items in DOM:",
-        conversationItems.length
-      );
-
-      conversationItems.forEach((item) => {
+    conversationsList
+      .querySelectorAll(".conversation-item")
+      .forEach((item) => {
         item.addEventListener("click", () => {
           const conversationId = item.getAttribute("data-conversation-id");
-          const partnerName =
-            item.querySelector(".conversation-name").textContent;
-          console.log("Conversation clicked:", conversationId, partnerName);
+          const partnerName = item.getAttribute("data-partner-name");
           this.openConversation(conversationId, partnerName);
         });
       });
-    }
   }
 
   async openConversation(conversationId, partnerName) {
-    console.log("Opening conversation:", conversationId, "with", partnerName);
+    if (!conversationId) return;
+
+    this.activeConversationId = conversationId;
 
     const chatPlaceholder = document.getElementById("chatPlaceholder");
     const activeChat = document.getElementById("activeChat");
@@ -805,50 +635,49 @@ class DashboardApp {
       activeChat.classList.add("active");
     }
 
+    document.querySelectorAll(".conversation-item").forEach((item) => {
+      const id = item.getAttribute("data-conversation-id");
+      if (id === conversationId) {
+        item.classList.add("active");
+      } else {
+        item.classList.remove("active");
+      }
+    });
+
     const chatPartnerName = document.getElementById("chatPartnerName");
     if (chatPartnerName) chatPartnerName.textContent = partnerName;
 
-    await this.loadMessages(conversationId);
+    if (this.messagesManager) {
+      this.messagesManager.watchMessages(conversationId);
+    }
     this.setupMessageSending(conversationId);
   }
 
-  async loadMessages(conversationId) {
-    console.log("Loading messages for conversation:", conversationId);
+  displayMessages(messages = []) {
     const chatMessages = document.getElementById("chatMessages");
-
-    if (!chatMessages) {
-      console.log("chatMessages element not found!");
-      return;
-    }
-
-    try {
-      const messages = this.getDemoMessages();
-      this.displayMessages(messages);
-    } catch (error) {
-      console.log("Error loading messages:", error);
-      this.displayMessages([]);
-    }
-  }
-
-  displayMessages(messages) {
-    const chatMessages = document.getElementById("chatMessages");
+    if (!chatMessages) return;
 
     chatMessages.innerHTML = messages
-      .map(
-        (msg) => `
-        <div class="message ${msg.isOwn ? "own" : "other"}">
+      .map((msg) => {
+        const timestamp = msg.createdAt?.toDate
+          ? msg.createdAt.toDate()
+          : msg.createdAt
+          ? new Date(msg.createdAt)
+          : new Date();
+        const isOwn = msg.senderId === this.currentUser?.id;
+        return `
+        <div class="message ${isOwn ? "own" : "other"}">
           <div class="message-bubble">
-            <div class="message-sender">${msg.senderName}</div>
-            <div class="message-text">${msg.content || msg.text}</div>
-            <div class="message-time">${this.formatTime(msg.timestamp)}</div>
+            <div class="message-sender">${msg.senderName || "Partner"}</div>
+            <div class="message-text">${msg.text || ""}</div>
+            <div class="message-time">${this.formatTime(timestamp)}</div>
           </div>
         </div>
-      `
-      )
+      `;
+      })
       .join("");
 
     chatMessages.scrollTop = chatMessages.scrollHeight;
-    console.log("Messages loaded:", messages.length);
   }
 
   setupMessageSending(conversationId) {
@@ -861,39 +690,27 @@ class DashboardApp {
       return;
     }
 
-    const sendMessage = async () => {
-      const messageText = messageInput.value.trim();
-      if (!messageText) return;
-
-      console.log("Sending message:", messageText);
-
-      try {
-        const chatMessages = document.getElementById("chatMessages");
-        const messageElement = document.createElement("div");
-        messageElement.className = "message own";
-        messageElement.innerHTML = `
-          <div class="message-bubble">
-            <div class="message-sender">You</div>
-            <div class="message-text">${messageText}</div>
-            <div class="message-time">${this.formatTime(new Date())}</div>
-          </div>
-        `;
-        chatMessages.appendChild(messageElement);
-
-        messageInput.value = "";
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-
-        this.loadConversations();
-      } catch (error) {
-        console.error("Error sending message:", error);
-      }
-    };
-
     const newSendButton = sendButton.cloneNode(true);
     const newMessageInput = messageInput.cloneNode(true);
 
     sendButton.parentNode.replaceChild(newSendButton, sendButton);
     messageInput.parentNode.replaceChild(newMessageInput, messageInput);
+
+    const sendMessage = async () => {
+      const messageText = newMessageInput.value.trim();
+      if (!messageText) return;
+
+      try {
+        if (!this.messagesManager) {
+          throw new Error("Messaging service unavailable");
+        }
+        await this.messagesManager.sendMessage(conversationId, messageText);
+        newMessageInput.value = "";
+      } catch (error) {
+        console.error("Error sending message:", error);
+        errorHandler.showUserError("Unable to send message. Please try again.");
+      }
+    };
 
     newSendButton.onclick = sendMessage;
     newMessageInput.onkeypress = (e) => {
@@ -905,34 +722,9 @@ class DashboardApp {
 
   async loadConnections() {
     console.log("Loading connections...");
-    await this.loadMyConnections();
-    await this.loadPendingRequests();
-    await this.loadSentRequests();
-  }
-
-  async loadMyConnections() {
-    console.log("Loading my connections...");
-    const connectionsGrid = document.getElementById("connectionsGrid");
-
-    if (!connectionsGrid) {
-      console.log("connectionsGrid element not found!");
-      return;
-    }
-
-    connectionsGrid.innerHTML = `
-      <div class="no-connections">
-        <i class="fas fa-user-friends"></i>
-        <p>Loading connections...</p>
-      </div>
-    `;
-
-    try {
-      const connections = this.getDemoConnections();
-      this.displayConnections(connections);
-    } catch (error) {
-      console.log("Error loading connections:", error);
-      this.displayConnections([]);
-    }
+    this.displayConnections(this.connectionState?.accepted || []);
+    this.displayPendingRequests(this.connectionState?.pendingIncoming || []);
+    this.displaySentRequests(this.connectionState?.pendingOutgoing || []);
   }
 
   // Add these methods to your DashboardApp class in dashboard.js
@@ -951,90 +743,11 @@ class DashboardApp {
     }
   }
 
-  // Start dynamic chat with enhanced features
-  startDynamicChat(userId, userName) {
-    console.log("Starting dynamic chat with:", userName);
-
-    const currentUser = authManager.getCurrentUser();
-    if (!currentUser) {
-      alert("Please log in to start chatting");
-      return;
-    }
-
-    if (window.chatService) {
-      window.chatService.startChat(currentUser, { id: userId, name: userName });
-      this.showSection("messagesSection");
-      errorHandler.showSuccess(
-        `Chat started with ${userName}! They will receive a notification.`
-      );
-    } else {
-      this.startChat(userId, userName);
-    }
-  }
-
-  // Enhanced message sending setup
-  setupMessageSending(conversationId) {
-    console.log("Setting up message sending for:", conversationId);
-    const sendButton = document.getElementById("sendMessageBtn");
-    const messageInput = document.getElementById("messageInput");
-
-    if (!sendButton || !messageInput) {
-      console.log("Message sending elements not found");
-      return;
-    }
-
-    const sendMessage = async () => {
-      const messageText = messageInput.value.trim();
-      if (!messageText) return;
-
-      console.log("Sending message:", messageText);
-
-      try {
-        const currentUser = authManager.getCurrentUser();
-        if (currentUser && window.chatService) {
-          await window.chatService.sendMessage(currentUser, messageText);
-        } else {
-          this.displayBasicMessage(messageText);
-        }
-      } catch (error) {
-        console.error("Error sending message:", error);
-      }
-    };
-
-    const newSendButton = sendButton.cloneNode(true);
-    const newMessageInput = messageInput.cloneNode(true);
-
-    sendButton.parentNode.replaceChild(newSendButton, sendButton);
-    messageInput.parentNode.replaceChild(newMessageInput, messageInput);
-
-    newSendButton.onclick = sendMessage;
-    newMessageInput.onkeypress = (e) => {
-      if (e.key === "Enter") sendMessage();
-    };
-  }
-
-  // Basic message display fallback
-  displayBasicMessage(messageText) {
-    const chatMessages = document.getElementById("chatMessages");
-    if (!chatMessages) return;
-
-    const messageElement = document.createElement("div");
-    messageElement.className = "message own";
-    messageElement.innerHTML = `
-    <div class="message-bubble">
-      <div class="message-sender">You</div>
-      <div class="message-text">${messageText}</div>
-      <div class="message-time">${new Date().toLocaleTimeString()}</div>
-    </div>
-  `;
-    chatMessages.appendChild(messageElement);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-  }
-
-  displayConnections(connections) {
+  displayConnections(connections = []) {
     const connectionsGrid = document.getElementById("connectionsGrid");
+    if (!connectionsGrid) return;
 
-    if (connections.length === 0) {
+    if (!connections.length) {
       connectionsGrid.innerHTML = `
         <div class="no-connections">
           <i class="fas fa-user-friends"></i>
@@ -1042,96 +755,175 @@ class DashboardApp {
           <p class="small">Find study partners to build your network!</p>
         </div>
       `;
-    } else {
-      connectionsGrid.innerHTML = connections
-        .map(
-          (conn) => `
+      return;
+    }
+
+    connectionsGrid.innerHTML = connections
+      .map((conn) => {
+        const partnerId =
+          conn.requesterId === this.currentUser?.id
+            ? conn.receiverId
+            : conn.requesterId;
+        const partnerName =
+          conn.requesterId === this.currentUser?.id
+            ? conn.receiverName
+            : conn.requesterName;
+        const partnerUniversity =
+          conn.requesterId === this.currentUser?.id
+            ? conn.receiverUniversity
+            : conn.requesterUniversity;
+        const partnerCourse =
+          conn.requesterId === this.currentUser?.id
+            ? conn.receiverCourse
+            : conn.requesterCourse;
+        const partnerAvailability =
+          conn.requesterId === this.currentUser?.id
+            ? conn.receiverAvailability
+            : conn.requesterAvailability;
+        const partnerStudyType =
+          conn.requesterId === this.currentUser?.id
+            ? conn.receiverStudyType
+            : conn.requesterStudyType;
+        const partnerCountry =
+          conn.requesterId === this.currentUser?.id
+            ? conn.receiverCountry
+            : conn.requesterCountry;
+        const partnerPayload = encodeURIComponent(
+          JSON.stringify({
+            id: partnerId,
+            name: partnerName,
+            university: partnerUniversity,
+            course: partnerCourse,
+            availability: partnerAvailability,
+            studyType: partnerStudyType,
+            country: partnerCountry,
+          })
+        );
+        const updatedAt = conn.updatedAt?.toDate
+          ? conn.updatedAt.toDate()
+          : conn.updatedAt
+          ? new Date(conn.updatedAt)
+          : null;
+
+        return `
           <div class="connection-card">
             <div class="connection-header">
-              <div class="connection-avatar">${
-                conn.avatar || (conn.name ? conn.name.charAt(0) : "U")
-              }</div>
+              <div class="connection-avatar">
+                ${partnerName?.charAt(0).toUpperCase() || "U"}
+              </div>
               <div class="connection-info">
-                <h4>${conn.name}</h4>
-                <p>${conn.course || "Not specified"} • ${
-            conn.university || "Not specified"
-          }</p>
+                <h4>${partnerName || "Student"}</h4>
+                <p>${partnerCourse || "Not specified"} • ${
+          partnerUniversity || "Not specified"
+        }</p>
                 <div class="connection-details">
                   <span class="detail">Available: ${this.getFormattedAvailability(
-                    conn.availability
+                    partnerAvailability
                   )}</span>
                   <span class="detail">Style: ${this.getFormattedStudyType(
-                    conn.studyType
+                    partnerStudyType
                   )}</span>
-                  <span class="detail">Last active: ${
-                    conn.lastActive || this.formatTime(conn.lastActiveDate)
+                  <span class="detail">Updated: ${
+                    updatedAt ? this.formatTime(updatedAt) : "Recently"
                   }</span>
                 </div>
               </div>
             </div>
             <div class="connection-actions">
-              <button class="action-btn chat-btn" onclick="dashboard.startChat('${
-                conn.userId || conn.id
-              }', '${conn.name}')">
+              <button class="action-btn chat-btn" onclick="dashboard.startDynamicChat('${partnerPayload}')">
                 <i class="fas fa-comment"></i> Message
               </button>
-              <button class="action-btn video-call-btn" onclick="dashboard.startVideoCall('${
-                conn.userId || conn.id
-              }')">
+              <button class="action-btn video-call-btn" onclick="dashboard.startVideoCall('${partnerId}')">
                 <i class="fas fa-video"></i> Call
               </button>
             </div>
           </div>
-        `
-        )
-        .join("");
-
-      console.log(
-        "Connections grid updated with",
-        connections.length,
-        "connections"
-      );
-    }
+        `;
+      })
+      .join("");
   }
 
   async loadPendingRequests() {
-    console.log("Loading pending requests...");
-    const pendingList = document.getElementById("pendingRequestsList");
-    if (pendingList) {
-      this.displayPendingRequests([]);
-    }
+    this.displayPendingRequests([]);
   }
 
-  displayPendingRequests(requests) {
+  displayPendingRequests(requests = []) {
     const pendingList = document.getElementById("pendingRequestsList");
-    if (requests.length === 0) {
+    if (!pendingList) return;
+
+    if (!requests.length) {
       pendingList.innerHTML = `
         <div class="no-requests">
           <i class="fas fa-clock"></i>
           <p>No pending requests</p>
         </div>
       `;
+      return;
     }
+
+    pendingList.innerHTML = requests
+      .map((request) => {
+        return `
+        <div class="request-item">
+          <div>
+            <strong>${request.requesterName}</strong>
+            <p>${request.requesterCourse || "Course"} • ${
+          request.requesterUniversity || "University"
+        }</p>
+          </div>
+          <div class="request-actions">
+            <button class="action-btn connect-btn" onclick="dashboard.respondToConnection('${
+              request.id
+            }','accept')">
+              <i class="fas fa-check"></i> Accept
+            </button>
+            <button class="action-btn chat-btn" onclick="dashboard.respondToConnection('${
+              request.id
+            }','decline')">
+              <i class="fas fa-times"></i> Decline
+            </button>
+          </div>
+        </div>
+      `;
+      })
+      .join("");
   }
 
   async loadSentRequests() {
-    console.log("Loading sent requests...");
-    const sentList = document.getElementById("sentRequestsList");
-    if (sentList) {
-      this.displaySentRequests([]);
-    }
+    this.displaySentRequests([]);
   }
 
-  displaySentRequests(requests) {
+  displaySentRequests(requests = []) {
     const sentList = document.getElementById("sentRequestsList");
-    if (requests.length === 0) {
+    if (!sentList) return;
+
+    if (!requests.length) {
       sentList.innerHTML = `
         <div class="no-requests">
           <i class="fas fa-paper-plane"></i>
           <p>No sent requests</p>
         </div>
       `;
+      return;
     }
+
+    sentList.innerHTML = requests
+      .map(
+        (request) => `
+        <div class="request-item">
+          <div>
+            <strong>${request.receiverName}</strong>
+            <p>${request.receiverCourse || "Course"} • ${
+          request.receiverUniversity || "University"
+        }</p>
+          </div>
+          <div class="request-status">
+            <span class="status-badge status-pending">Pending</span>
+          </div>
+        </div>
+      `
+      )
+      .join("");
   }
 
   // ==================== PROFILE FUNCTIONALITY ====================
@@ -1303,106 +1095,6 @@ class DashboardApp {
 
   // ==================== DEMO DATA ====================
 
-  getDemoConversations() {
-    return [
-      {
-        id: "conv-1",
-        partnerId: "user-2",
-        partnerName: "Alex Johnson",
-        partnerAvatar: "AJ",
-        lastMessage: "Hey, are you available to study Calculus this weekend?",
-        lastMessageTime: new Date(Date.now() - 5 * 60000),
-        unreadCount: 0,
-        partnerCourse: "Computer Science",
-        partnerUniversity: "University of Rwanda",
-      },
-      {
-        id: "conv-2",
-        partnerId: "user-3",
-        partnerName: "Sarah Chen",
-        partnerAvatar: "SC",
-        lastMessage: "Thanks for the study notes! They were really helpful.",
-        lastMessageTime: new Date(Date.now() - 2 * 3600000),
-        unreadCount: 0,
-        partnerCourse: "Mathematics",
-        partnerUniversity: "University of Nairobi",
-      },
-    ];
-  }
-
-  getDemoMessages() {
-    return [
-      {
-        id: "msg-1",
-        senderName: "Alex Johnson",
-        senderId: "user-2",
-        content:
-          "Hi there! I saw we're both studying Computer Science. Would you like to form a study group?",
-        timestamp: new Date(Date.now() - 30 * 60000),
-        isOwn: false,
-      },
-      {
-        id: "msg-2",
-        senderName: "You",
-        senderId: "user-1",
-        content:
-          "Hey Alex! That sounds great. I'm available in the evenings this week.",
-        timestamp: new Date(Date.now() - 25 * 60000),
-        isOwn: true,
-      },
-    ];
-  }
-
-  getDemoConnections() {
-    return [
-      {
-        id: "conn-1",
-        userId: "user-2",
-        name: "Alex Johnson",
-        avatar: "AJ",
-        university: "University of Rwanda",
-        country: "Rwanda",
-        countryCode: "RW",
-        course: "Computer Science",
-        availability: "evening",
-        studyType: "group",
-        lastActive: "2 hours ago",
-        lastActiveDate: new Date(Date.now() - 2 * 3600000),
-        isOnline: false,
-      },
-      {
-        id: "conn-2",
-        userId: "user-3",
-        name: "Sarah Chen",
-        avatar: "SC",
-        university: "University of Nairobi",
-        country: "Kenya",
-        countryCode: "KE",
-        course: "Mathematics",
-        availability: "afternoon",
-        studyType: "pair",
-        lastActive: "Online now",
-        lastActiveDate: new Date(),
-        isOnline: true,
-      },
-      {
-        id: "conn-3",
-        userId: "user-4",
-        name: "Mike Davis",
-        avatar: "MD",
-        university: "Makerere University",
-        country: "Uganda",
-        countryCode: "UG",
-        course: "Physics",
-        availability: "morning",
-        studyType: "project",
-        lastActive: "1 hour ago",
-        lastActiveDate: new Date(Date.now() - 1 * 3600000),
-        isOnline: true,
-      },
-    ];
-  }
-
   // ==================== OTHER METHODS ====================
 
   startNewChat() {
@@ -1422,8 +1114,23 @@ class DashboardApp {
     );
   }
 
-  sendConnectionRequest(userId) {
-    alert("Connection request sent! The user will be notified.");
+  async sendConnectionRequest(encodedPartner) {
+    try {
+      if (!this.connectionsManager) {
+        throw new Error("Connection service unavailable");
+      }
+
+      const partner = JSON.parse(decodeURIComponent(encodedPartner));
+      await this.connectionsManager.sendConnectionRequest(partner);
+      errorHandler.showSuccess(
+        `Connection request sent to ${partner.name || "student"}`
+      );
+    } catch (error) {
+      console.error("Connection request error:", error);
+      errorHandler.showUserError(
+        error.message || "Failed to send connection request."
+      );
+    }
   }
 
   switchConnectionTab(btn) {
@@ -1460,9 +1167,27 @@ class DashboardApp {
 
   showAdminDashboard() {
     this.showSection("adminSection");
+    this.loadAdminDashboard();
   }
 
-  loadAdminDashboard() {
+  async respondToConnection(connectionId, action) {
+    if (!this.connectionsManager) return;
+    try {
+      await this.connectionsManager.respondToRequest(connectionId, action);
+      const message =
+        action === "accept"
+          ? "Connection accepted"
+          : "Connection request declined";
+      errorHandler.showSuccess(message);
+    } catch (error) {
+      console.error("Connection response error:", error);
+      errorHandler.showUserError(
+        "Unable to update connection. Please try again."
+      );
+    }
+  }
+
+  async loadAdminDashboard() {
     const adminTotalUsers = document.getElementById("adminTotalUsers");
     const adminTotalMessages = document.getElementById("adminTotalMessages");
     const adminTotalConnections = document.getElementById(
@@ -1470,38 +1195,82 @@ class DashboardApp {
     );
     const usersTableBody = document.getElementById("usersTableBody");
 
-    if (adminTotalUsers) adminTotalUsers.textContent = "156";
-    if (adminTotalMessages) adminTotalMessages.textContent = "1,247";
-    if (adminTotalConnections) adminTotalConnections.textContent = "423";
-
     if (usersTableBody) {
       usersTableBody.innerHTML = `
         <tr>
-          <td>Alex Johnson</td>
-          <td>alex@example.com</td>
-          <td>University of Rwanda</td>
-          <td>Computer Science</td>
-          <td>2024-01-15</td>
-          <td><span class="status-active">Active</span></td>
-        </tr>
-        <tr>
-          <td>Sarah Chen</td>
-          <td>sarah@example.com</td>
-          <td>University of Nairobi</td>
-          <td>Mathematics</td>
-          <td>2024-01-10</td>
-          <td><span class="status-active">Active</span></td>
-        </tr>
-        <tr>
-          <td>Mike Davis</td>
-          <td>mike@example.com</td>
-          <td>Makerere University</td>
-          <td>Physics</td>
-          <td>2024-01-08</td>
-          <td><span class="status-inactive">Inactive</span></td>
+          <td colspan="6" class="loading-row">
+            <i class="fas fa-spinner fa-spin"></i> Loading users...
+          </td>
         </tr>
       `;
     }
+
+    try {
+      const [users, connectionStats, conversationStats] = await Promise.all([
+        authManager.getAllUsers(),
+        this.connectionsManager
+          ? this.connectionsManager.getConnectionStats()
+          : { total: 0 },
+        this.messagesManager
+          ? this.messagesManager.getConversationStats()
+          : { messages: 0 },
+      ]);
+
+      if (adminTotalUsers) adminTotalUsers.textContent = users.length;
+      if (adminTotalConnections)
+        adminTotalConnections.textContent = connectionStats.total || 0;
+      if (adminTotalMessages)
+        adminTotalMessages.textContent = conversationStats.messages || 0;
+
+      this.renderAdminUsers(users);
+    } catch (error) {
+      console.error("Error loading admin data:", error);
+      if (usersTableBody) {
+        usersTableBody.innerHTML = `
+          <tr>
+            <td colspan="6" class="error-message">
+              Unable to load admin data. Please try again later.
+            </td>
+          </tr>
+        `;
+      }
+    }
+  }
+
+  renderAdminUsers(users = []) {
+    const usersTableBody = document.getElementById("usersTableBody");
+    if (!usersTableBody) return;
+
+    if (!users.length) {
+      usersTableBody.innerHTML = `
+        <tr>
+          <td colspan="6" class="no-data">
+            No registered users yet.
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    usersTableBody.innerHTML = users
+      .map((user) => {
+        const createdAt = user.createdAt?.toDate
+          ? user.createdAt.toDate()
+          : user.createdAt
+          ? new Date(user.createdAt)
+          : null;
+        return `
+        <tr>
+          <td>${user.name || "Student"}</td>
+          <td>${user.email || "N/A"}</td>
+          <td>${user.university || "Not specified"}</td>
+          <td>${user.course || "Not specified"}</td>
+          <td>${createdAt ? createdAt.toLocaleDateString() : "Recently"}</td>
+          <td><span class="status-active">Active</span></td>
+        </tr>
+      `;
+      })
+      .join("");
   }
 
   showLoading(message) {

@@ -1,4 +1,6 @@
 // Simple Countries Service - Guaranteed to work
+const countryApiConfig = window.__ACADEMICO_CONFIG?.apis || {};
+
 const countriesService = {
   countries: [],
 
@@ -8,7 +10,8 @@ const countriesService = {
 
       // Try to load from API first
       const response = await fetch(
-        "https://restcountries.com/v3.1/all?fields=name,cca2"
+        countryApiConfig.countries ||
+          "https://restcountries.com/v3.1/all?fields=name,cca2"
       );
 
       if (response.ok) {
@@ -50,15 +53,35 @@ const countriesService = {
     return this.countries;
   },
 
-  populateCountryDropdown(selectId) {
+  async populateCountryDropdown(
+    selectId,
+    { placeholder = "Select your country", includeAllOption = false } = {}
+  ) {
     const select = document.getElementById(selectId);
     if (!select) {
       console.log("Country select element not found");
       return;
     }
 
-    // Clear loading message
-    select.innerHTML = '<option value="">Select your country</option>';
+    if (!this.countries.length) {
+      try {
+        await this.loadCountries();
+      } catch (error) {
+        console.error("Unable to load countries for dropdown:", error);
+        return;
+      }
+    }
+
+    select.innerHTML = "";
+
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = placeholder;
+    select.appendChild(defaultOption);
+
+    if (includeAllOption) {
+      defaultOption.textContent = placeholder || "All Countries";
+    }
 
     // Add countries
     this.countries.forEach((country) => {

@@ -585,8 +585,10 @@ class AcademicOApp {
 
   async loadCountriesOnStart() {
     try {
-      await countriesService.loadCountries();
-      countriesService.populateCountryDropdown("countryFilter");
+      await countriesService.populateCountryDropdown("countryFilter", {
+        placeholder: "All Countries",
+        includeAllOption: true,
+      });
     } catch (error) {
       console.error("Error loading countries:", error);
     }
@@ -603,7 +605,11 @@ class AcademicOApp {
       );
       universitiesService.populateUniversityDropdown(
         "regUniversity",
-        universitiesData.universities
+        universitiesData.universities,
+        {
+          placeholder: "Select your university",
+          includeOtherOption: true,
+        }
       );
     } catch (error) {
       console.error("Error loading universities:", error);
@@ -643,19 +649,15 @@ class AcademicOApp {
     const universityFilter = document.getElementById("universityFilter");
     if (!universityFilter) return;
 
-    universityFilter.innerHTML = '<option value="">All Universities</option>';
-
-    universities.forEach((uni) => {
-      const option = document.createElement("option");
-      option.value = uni.name;
-      option.textContent = uni.name;
-      universityFilter.appendChild(option);
-    });
-
-    const otherOption = document.createElement("option");
-    otherOption.value = "other";
-    otherOption.textContent = "Other (University not listed)";
-    universityFilter.appendChild(otherOption);
+    universitiesService.populateUniversityDropdown(
+      "universityFilter",
+      universities,
+      {
+        placeholder: "All Universities",
+        includeAllOption: true,
+        includeOtherOption: true,
+      }
+    );
   }
 
   handleSearchUniversityChange(selectedValue) {
@@ -868,13 +870,13 @@ class AcademicOApp {
     const countrySelect = document.getElementById("regCountry");
     if (!countrySelect) return;
 
-    countrySelect.innerHTML = '<option value="">Select your country</option>';
-
-    try {
-      countriesService.populateCountryDropdown("regCountry");
-    } catch (error) {
-      console.error("Error loading countries:", error);
-    }
+    countriesService
+      .populateCountryDropdown("regCountry", {
+        placeholder: "Select your country",
+      })
+      .catch((error) => {
+        console.error("Error loading countries:", error);
+      });
   }
 
   showInlineLoading(containerId, message) {

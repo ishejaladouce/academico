@@ -163,6 +163,16 @@
                     <!-- Universities will be loaded dynamically -->
                   </select>
                 </div>
+                <div class="form-group hidden" id="searchCustomUniversityContainer">
+                  <label for="searchCustomUniversity" class="form-label">
+                    <i class="fas fa-edit"></i> Enter University
+                  </label>
+                  <input
+                    type="text"
+                    id="searchCustomUniversity"
+                    placeholder="Type your university name"
+                  />
+                </div>
               </div>
 
               <button type="submit" class="search-button">
@@ -461,6 +471,17 @@
       </section>
     </main>
 
+    <script src="config.js"></script>
+    <script>
+      if (!window.__ACADEMICO_CONFIG) {
+        document.body.innerHTML =
+          "<main style='padding:40px;font-family:Arial,sans-serif;max-width:640px;margin:auto;text-align:center'>"+
+          "<h1>Configuration Missing</h1>"+
+          "<p>Please create <code>config.js</code> from <code>config.example.js</code> and reload this page.</p>"+
+          "</main>";
+      }
+    </script>
+
     <script src="js/errorHandler.js"></script>
     <script src="js/api.js"></script>
 
@@ -473,8 +494,6 @@
 
     <script src="js/messages.js"></script>
     <script src="js/connections.js"></script>
-    <script src="js/chat-service.js"></script>
-
     <script src="js/dashboard.js"></script>
   </body>
 </html>

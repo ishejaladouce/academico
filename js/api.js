@@ -1,7 +1,10 @@
 // SILENT API Service - No Console Errors
+const apiConfig = window.__ACADEMICO_CONFIG?.apis || {};
+
 const apiService = {
   baseURLs: {
-    timezone: "https://worldtimeapi.org/api/ip",
+    timezone:
+      apiConfig.worldTime || "https://worldtimeapi.org/api/ip",
     bored: "https://boredapi.com/api/activity",
   },
 

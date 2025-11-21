@@ -1,5 +1,10 @@
 // Universities Service - Dynamic University Data with "Other" option
+const universityApiConfig = window.__ACADEMICO_CONFIG?.apis || {};
+
 const universitiesService = {
+  datasetCache: null,
+  datasetSource: null,
+
   async loadUniversities(countryCode) {
     try {
       console.log(`Loading universities for country: ${countryCode}`);
@@ -9,21 +14,47 @@ const universitiesService = {
         throw new Error("Country not found");
       }
 
-      // Use Hipolabs Universities API
-      const response = await fetch(
-        `http://universities.hipolabs.com/search?country=${encodeURIComponent(
-          countryName
-        )}`
-      );
+      const baseUrl =
+        universityApiConfig.universities ||
+        "https://universities.hipolabs.com/search";
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      let universitiesData = [];
+
+      if (baseUrl.includes("githubusercontent.com")) {
+        if (!this.datasetCache || this.datasetSource !== baseUrl) {
+          const response = await fetch(baseUrl);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          this.datasetCache = await response.json();
+          this.datasetSource = baseUrl;
+        }
+
+        universitiesData = this.datasetCache.filter(
+          (uni) =>
+            uni.country &&
+            uni.country.toLowerCase() === countryName.toLowerCase()
+        );
+      } else {
+        const response = await fetch(
+          `${baseUrl}?country=${encodeURIComponent(countryName)}`
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        universitiesData = await response.json();
       }
 
-      const data = await response.json();
+      const formattedUniversities = universitiesData.map((uni) => ({
+        name: uni.name,
+        website: Array.isArray(uni.web_pages) ? uni.web_pages[0] : uni.website,
+        country: uni.country || countryName,
+      }));
 
       // Remove duplicates and sort
-      const uniqueUniversities = this.removeDuplicates(data);
+      const uniqueUniversities = this.removeDuplicates(formattedUniversities);
 
       console.log(
         `Loaded ${uniqueUniversities.length} universities for ${countryName}`
@@ -126,7 +157,15 @@ const universitiesService = {
     );
   },
 
-  populateUniversityDropdown(selectId, universities) {
+  populateUniversityDropdown(
+    selectId,
+    universities,
+    {
+      placeholder = "Select your university",
+      includeAllOption = false,
+      includeOtherOption = true,
+    } = {}
+  ) {
     const select = document.getElementById(selectId);
     if (!select) {
       console.log(`Select element with id '${selectId}' not found`);
@@ -134,7 +173,12 @@ const universitiesService = {
     }
 
     // Clear existing options
-    select.innerHTML = '<option value="">Select your university</option>';
+    select.innerHTML = "";
+
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "";
+    defaultOption.textContent = placeholder;
+    select.appendChild(defaultOption);
 
     // Add universities to dropdown
     universities.forEach((uni) => {
@@ -144,11 +188,16 @@ const universitiesService = {
       select.appendChild(option);
     });
 
-    // Add "Other" option at the end
-    const otherOption = document.createElement("option");
-    otherOption.value = "other";
-    otherOption.textContent = "Other (My university is not listed)";
-    select.appendChild(otherOption);
+    if (includeAllOption) {
+      defaultOption.textContent = placeholder || "All Universities";
+    }
+
+    if (includeOtherOption) {
+      const otherOption = document.createElement("option");
+      otherOption.value = "other";
+      otherOption.textContent = "Other (My university is not listed)";
+      select.appendChild(otherOption);
+    }
 
     console.log(
       `Populated ${universities.length} universities + "Other" option in ${selectId}`

@@ -1,4 +1,6 @@
 // Enhanced API Service for AcademicO - Fixed APIs
+const enhancedApiConfig = window.__ACADEMICO_CONFIG?.apis || {};
+
 class EnhancedAPIService {
   constructor() {
     this.apiCallCount = 0;
@@ -16,19 +18,26 @@ class EnhancedAPIService {
   async getEnhancedTimezoneData() {
     this.apiCallCount++;
     try {
-      const response = await fetch("https://worldtimeapi.org/api/ip");
+      const response = await fetch(
+        enhancedApiConfig.worldTime || "https://ipapi.co/json/"
+      );
       if (!response.ok) throw new Error("Timezone API failed");
 
       const data = await response.json();
       this.apiStatus.worldTime = "active";
+      const now = new Date();
 
       return {
-        timezone: data.timezone,
-        datetime: data.datetime,
-        dayOfWeek: data.day_of_week,
-        weekNumber: data.week_number,
+        timezone: data.timezone || "UTC",
+        city: data.city || "Unknown city",
+        country: data.country_name || data.country || "Unknown country",
+        latitude: data.latitude,
+        longitude: data.longitude,
+        datetime: now.toISOString(),
+        dayOfWeek: now.getDay(),
+        weekNumber: this.getWeekNumber(now),
         success: true,
-        source: "WorldTimeAPI",
+        source: "ipapi",
       };
     } catch (error) {
       this.apiStatus.worldTime = "inactive";
@@ -52,7 +61,8 @@ class EnhancedAPIService {
     try {
       // Using free weather API that doesn't require authentication
       const response = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=-1.95&longitude=30.06&current=temperature_2m,weather_code&timezone=Africa%2FCairo`
+        enhancedApiConfig.weather ||
+          "https://api.open-meteo.com/v1/forecast?latitude=-1.95&longitude=30.06&current=temperature_2m,weather_code&timezone=Africa%2FCairo"
       );
 
       if (!response.ok) throw new Error("Weather API failed");
@@ -96,7 +106,9 @@ class EnhancedAPIService {
     this.apiCallCount++;
     try {
       // Using a different quotes API that's more reliable
-      const response = await fetch("https://api.adviceslip.com/advice");
+      const response = await fetch(
+        enhancedApiConfig.quotes || "https://api.adviceslip.com/advice"
+      );
       if (!response.ok) throw new Error("Quotes API failed");
 
       const data = await response.json();
@@ -147,10 +159,11 @@ class EnhancedAPIService {
   async getCountryUniversities(country) {
     this.apiCallCount++;
     try {
+      const baseUrl =
+        enhancedApiConfig.universities ||
+        "https://universities.hipolabs.com/search";
       const response = await fetch(
-        `http://universities.hipolabs.com/search?country=${encodeURIComponent(
-          country
-        )}`
+        `${baseUrl}?country=${encodeURIComponent(country)}`
       );
       if (!response.ok) throw new Error("Universities API failed");
 
