@@ -12,12 +12,19 @@ class DashboardApp {
       pendingOutgoing: [],
     };
     this.activeConversationId = null;
+    this.activeGroupChatId = null;
+    this.groupMessageUnsubscribe = null;
   }
 
   async init() {
     if (this.isInitialized) return;
 
     console.log("Dashboard initializing...");
+    
+    // Apply saved theme immediately
+    const savedTheme = localStorage.getItem("academico_theme") || "light";
+    this.applyTheme(savedTheme);
+    
     await this.checkAuthentication();
     this.initializeManagers();
     this.setupEventListeners();
@@ -28,6 +35,7 @@ class DashboardApp {
     setTimeout(() => {
       this.loadCountries();
       this.loadUniversities();
+      this.loadSuggestions(); // Load dynamic suggestions
     }, 100);
 
     // Request notification permission for messaging
@@ -89,9 +97,10 @@ class DashboardApp {
           
           // Always update all displays to ensure UI is in sync
           this.displayConnections(grouped.accepted);
+          this.displayIncomingRequests(grouped.pendingIncoming);
           this.displaySentRequests(grouped.pendingOutgoing);
           
-          // Update notification badge for incoming requests (even though we don't show the tab)
+          // Update notification badge for incoming requests
           this.updateConnectionNotification(grouped.pendingIncoming.length);
         });
       }
@@ -227,7 +236,7 @@ class DashboardApp {
       .getElementById("universityFilter")
       .addEventListener("change", (e) => {
         console.log("University filter changed:", e.target.value);
-        // No special handling needed - value will be used in search
+        this.handleSearchUniversityChange(e.target.value);
       });
 
     document.addEventListener("click", (e) => {
@@ -244,7 +253,90 @@ class DashboardApp {
       this.sortResults(e.target.value);
     });
 
+    // Explore search button - show search form
+    const exploreSearchBtn = document.getElementById("exploreSearchBtn");
+    if (exploreSearchBtn) {
+      exploreSearchBtn.addEventListener("click", () => {
+        this.showSearchForm();
+      });
+    }
+
+
+    // Settings section - dark mode toggle
+    const darkModeToggle = document.getElementById("darkModeToggle");
+    if (darkModeToggle) {
+      // Load saved theme preference
+      const savedTheme = localStorage.getItem("academico_theme") || "light";
+      darkModeToggle.checked = savedTheme === "dark";
+      this.applyTheme(savedTheme);
+      
+      darkModeToggle.addEventListener("change", (e) => {
+        const theme = e.target.checked ? "dark" : "light";
+        localStorage.setItem("academico_theme", theme);
+        this.applyTheme(theme);
+      });
+    }
+
+    // Settings dropdown link
+    const settingsDropdown = document.querySelector('a[data-section="settingsSection"]');
+    if (settingsDropdown) {
+      settingsDropdown.addEventListener("click", (e) => {
+        e.preventDefault();
+        this.showSection("settingsSection");
+      });
+    }
+
     console.log("Event listeners setup complete");
+  }
+
+  /**
+   * Apply theme (dark or light mode)
+   * @param {string} theme - 'dark' or 'light'
+   */
+  applyTheme(theme) {
+    const isDark = theme === "dark";
+    document.documentElement.classList.toggle("dark-mode", isDark);
+    document.body.classList.toggle("dark-mode", isDark);
+    const darkModeToggle = document.getElementById("darkModeToggle");
+    if (darkModeToggle) {
+      darkModeToggle.checked = isDark;
+    }
+  }
+
+  /**
+   * Show the search form
+   */
+  showSearchForm() {
+    const searchCard = document.getElementById("searchCard");
+    const exploreContainer = document.getElementById("exploreSearchContainer");
+    
+    if (searchCard) {
+      searchCard.classList.remove("hidden");
+      // Scroll to search form
+      setTimeout(() => {
+        searchCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+    
+    if (exploreContainer) {
+      exploreContainer.style.display = 'none';
+    }
+  }
+
+  /**
+   * Hide the search form
+   */
+  hideSearchForm() {
+    const searchCard = document.getElementById("searchCard");
+    const exploreContainer = document.getElementById("exploreSearchContainer");
+    
+    if (searchCard) {
+      searchCard.classList.add("hidden");
+    }
+    
+    if (exploreContainer) {
+      exploreContainer.style.display = 'block';
+    }
   }
 
   showSection(sectionId) {
@@ -373,11 +465,45 @@ class DashboardApp {
     }
   }
 
+  /**
+   * Handle university filter change in search form
+   * Shows/hides custom university input when "other" is selected
+   */
+  handleSearchUniversityChange(value) {
+    const customContainer = document.getElementById("searchCustomUniversityContainer");
+    const customInput = document.getElementById("searchCustomUniversity");
+    
+    if (!customContainer || !customInput) return;
+
+    if (value === "other") {
+      customContainer.classList.remove("hidden");
+      customInput.required = true;
+      customInput.focus();
+    } else {
+      customContainer.classList.add("hidden");
+      customInput.required = false;
+      customInput.value = "";
+    }
+  }
+
   // ==================== ENHANCED SEARCH FUNCTIONALITY ====================
 
   async handleSearch(e) {
     e.preventDefault();
     console.log("Handling search...");
+
+    // Get university value - use custom input if "other" is selected
+    const universityFilter = document.getElementById("universityFilter");
+    let university = universityFilter ? universityFilter.value : "";
+    
+    if (university === "other") {
+      const customUniversity = document.getElementById("searchCustomUniversity");
+      university = customUniversity ? customUniversity.value.trim() : "";
+      if (!university) {
+        alert("Please enter your university name");
+        return;
+      }
+    }
 
     const filters = {
       course: document.getElementById("courseInput").value,
@@ -385,7 +511,7 @@ class DashboardApp {
       availability: document.getElementById("availabilitySelect").value,
       studyType: document.getElementById("studyTypeSelect").value,
       country: document.getElementById("countryFilter").value,
-      university: document.getElementById("universityFilter").value,
+      university: university,
     };
 
     console.log("Search parameters:", filters);
@@ -729,6 +855,354 @@ class DashboardApp {
       });
   }
 
+  async openGroupChat(groupId, groupName) {
+    if (!groupId) {
+      console.error("openGroupChat: No group ID provided");
+      return;
+    }
+
+    console.log(`Opening group chat ${groupId} for ${groupName}`);
+
+    // Set active group chat ID
+    this.activeGroupChatId = groupId;
+    this.activeConversationId = null; // Clear regular conversation
+
+    const chatPlaceholder = document.getElementById("chatPlaceholder");
+    const activeChat = document.getElementById("activeChat");
+
+    if (chatPlaceholder) chatPlaceholder.classList.add("hidden");
+    if (activeChat) {
+      activeChat.classList.remove("hidden");
+      activeChat.classList.add("active");
+    }
+
+    // Update chat header for group
+    const chatPartnerName = document.getElementById("chatPartnerName");
+    const partnerStatus = document.getElementById("partnerStatus");
+    if (chatPartnerName) {
+      chatPartnerName.innerHTML = `<i class="fas fa-users"></i> ${groupName}`;
+    }
+    if (partnerStatus) {
+      partnerStatus.textContent = "Group Chat";
+    }
+
+    // Load and display group messages
+    await this.loadGroupMessages(groupId);
+    this.setupGroupMessageSending(groupId);
+  }
+
+  async loadGroupMessages(groupId) {
+    try {
+      if (!this.messagesManager || !this.messagesManager.db) {
+        console.error("Messages manager not available");
+        return;
+      }
+
+      const chatMessages = document.getElementById("chatMessages");
+      if (!chatMessages) return;
+
+      chatMessages.innerHTML = '<div class="loading-messages"><i class="fas fa-spinner fa-spin"></i> Loading messages...</div>';
+
+      // Fetch group messages - try with orderBy first, fallback to without if index doesn't exist
+      let messagesSnapshot;
+      try {
+        messagesSnapshot = await this.messagesManager.db
+          .collection("groupMessages")
+          .where("groupId", "==", groupId)
+          .orderBy("createdAt", "asc")
+          .get();
+      } catch (indexError) {
+        console.warn("Index not found, fetching without orderBy:", indexError);
+        // Fallback: fetch without orderBy and sort in memory
+        messagesSnapshot = await this.messagesManager.db
+          .collection("groupMessages")
+          .where("groupId", "==", groupId)
+          .get();
+      }
+
+      let messages = messagesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      // Sort messages by createdAt if not already sorted
+      messages.sort((a, b) => {
+        const timeA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+        const timeB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+        return timeA - timeB;
+      });
+
+      if (messages.length === 0) {
+        chatMessages.innerHTML = `
+          <div class="no-messages">
+            <i class="fas fa-comments"></i>
+            <p>No messages yet. Start the conversation!</p>
+          </div>
+        `;
+      } else {
+        this.displayGroupMessages(messages);
+      }
+
+      // Set up real-time listener for group messages
+      // Try with orderBy first, fallback to without
+      let unsubscribe;
+      try {
+        unsubscribe = this.messagesManager.db
+          .collection("groupMessages")
+          .where("groupId", "==", groupId)
+          .orderBy("createdAt", "asc")
+          .onSnapshot((snapshot) => {
+            let newMessages = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+            
+            // Sort messages
+            newMessages.sort((a, b) => {
+              const timeA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+              const timeB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+              return timeA - timeB;
+            });
+            
+            this.displayGroupMessages(newMessages);
+          }, (error) => {
+            console.warn("Error with ordered listener, trying without orderBy:", error);
+            // Fallback: listen without orderBy
+            this.messagesManager.db
+              .collection("groupMessages")
+              .where("groupId", "==", groupId)
+              .onSnapshot((snapshot) => {
+                let newMessages = snapshot.docs.map(doc => ({
+                  id: doc.id,
+                  ...doc.data()
+                }));
+                
+                // Sort messages
+                newMessages.sort((a, b) => {
+                  const timeA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+                  const timeB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+                  return timeA - timeB;
+                });
+                
+                this.displayGroupMessages(newMessages);
+              });
+          });
+      } catch (error) {
+        console.warn("Error setting up listener, using fallback:", error);
+        // Fallback: listen without orderBy
+        unsubscribe = this.messagesManager.db
+          .collection("groupMessages")
+          .where("groupId", "==", groupId)
+          .onSnapshot((snapshot) => {
+            let newMessages = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+            
+            // Sort messages
+            newMessages.sort((a, b) => {
+              const timeA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+              const timeB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+              return timeA - timeB;
+            });
+            
+            this.displayGroupMessages(newMessages);
+          });
+      }
+
+      // Store unsubscribe function for cleanup
+      if (unsubscribe) {
+        this.groupMessageUnsubscribe = unsubscribe;
+      }
+
+    } catch (error) {
+      console.error("Error loading group messages:", error);
+      const chatMessages = document.getElementById("chatMessages");
+      if (chatMessages) {
+        chatMessages.innerHTML = `<div class="error-message">Unable to load messages. Please try again.</div>`;
+      }
+    }
+  }
+
+  displayGroupMessages(messages = []) {
+    const chatMessages = document.getElementById("chatMessages");
+    if (!chatMessages) return;
+
+    const currentUser = authManager.getCurrentUser();
+    if (!currentUser) return;
+
+    if (messages.length === 0) {
+      chatMessages.innerHTML = `
+        <div class="no-messages">
+          <i class="fas fa-comments"></i>
+          <p>No messages yet. Start the conversation!</p>
+        </div>
+      `;
+      return;
+    }
+
+    chatMessages.innerHTML = messages.map(message => {
+      const isOwn = message.senderId === currentUser.id;
+      const senderName = message.senderName || "Unknown";
+      const timestamp = message.createdAt?.toDate ? 
+        new Date(message.createdAt.toDate()) : 
+        new Date(message.createdAt || Date.now());
+      const timeStr = this.formatMessageTime(timestamp);
+
+      return `
+        <div class="message ${isOwn ? 'own' : 'other'}">
+          ${!isOwn ? `<div class="message-sender">${senderName}</div>` : ''}
+          <div class="message-content">${this.escapeHtml(message.text || '')}</div>
+          <div class="message-time">${timeStr}</div>
+        </div>
+      `;
+    }).join('');
+
+    // Scroll to bottom
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  async setupGroupMessageSending(groupId) {
+    const messageInput = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendMessageBtn");
+
+    if (!messageInput || !sendBtn) {
+      console.error("Message input or send button not found", { messageInput, sendBtn });
+      return;
+    }
+
+    console.log("Setting up group message sending for group:", groupId);
+
+    // Remove existing listeners by cloning
+    const newSendBtn = sendBtn.cloneNode(true);
+    sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
+
+    const newMessageInput = messageInput.cloneNode(true);
+    messageInput.parentNode.replaceChild(newMessageInput, messageInput);
+
+    // Add new listeners
+    const currentUser = authManager.getCurrentUser();
+    if (!currentUser) {
+      console.error("No current user found");
+      return;
+    }
+
+    const sendMessage = async () => {
+      const text = newMessageInput.value.trim();
+      console.log("Sending group message:", text);
+      if (!text) {
+        console.log("Empty message, not sending");
+        return;
+      }
+      
+      try {
+        await this.sendGroupMessage(groupId, text);
+        newMessageInput.value = "";
+        console.log("Message sent successfully");
+      } catch (error) {
+        console.error("Error in sendMessage handler:", error);
+      }
+    };
+
+    newSendBtn.addEventListener("click", sendMessage);
+
+    newMessageInput.addEventListener("keypress", async (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        await sendMessage();
+      }
+    });
+
+    console.log("Group message sending setup complete");
+  }
+
+  async sendGroupMessage(groupId, text) {
+    if (!text || !text.trim()) {
+      console.log("Empty message, not sending");
+      return;
+    }
+
+    console.log("sendGroupMessage called:", { groupId, text });
+
+    try {
+      const currentUser = authManager.getCurrentUser();
+      if (!currentUser) {
+        console.error("No current user");
+        errorHandler.showUserError("Please log in to send messages.");
+        return;
+      }
+
+      if (!this.messagesManager || !this.messagesManager.db) {
+        console.error("Messages manager or DB not available");
+        errorHandler.showUserError("Unable to send message. Please refresh the page.");
+        return;
+      }
+
+      console.log("Verifying group membership...");
+      // Get group to verify membership
+      const groupDoc = await this.messagesManager.db.collection("studyGroups").doc(groupId).get();
+      if (!groupDoc.exists) {
+        console.error("Group not found:", groupId);
+        errorHandler.showUserError("Group not found");
+        return;
+      }
+
+      const groupData = groupDoc.data();
+      if (!groupData.members || !groupData.members.includes(currentUser.id)) {
+        console.error("User not a member of group:", { userId: currentUser.id, members: groupData.members });
+        errorHandler.showUserError("You must be a member of this group to send messages");
+        return;
+      }
+
+      console.log("Sending message to Firestore...");
+      // Send message
+      const messageRef = await this.messagesManager.db.collection("groupMessages").add({
+        groupId: groupId,
+        senderId: currentUser.id,
+        senderName: currentUser.name,
+        text: text.trim(),
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      console.log("Message sent, ID:", messageRef.id);
+
+      // Update group's last message
+      await this.messagesManager.db.collection("studyGroups").doc(groupId).update({
+        lastMessage: text.trim(),
+        lastMessageAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      console.log("Group updated with last message");
+
+    } catch (error) {
+      console.error("Error sending group message:", error);
+      console.error("Error details:", error.message, error.stack);
+      errorHandler.showUserError("Failed to send message: " + error.message);
+    }
+  }
+
+  formatMessageTime(timestamp) {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diff = now - time;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return "Just now";
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return time.toLocaleDateString();
+  }
+
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
   async openConversation(conversationId, partnerName) {
     if (!conversationId) {
       console.error("openConversation: No conversation ID provided");
@@ -739,6 +1213,7 @@ class DashboardApp {
 
     // Set active conversation ID FIRST before any async operations
     this.activeConversationId = conversationId;
+    this.activeGroupChatId = null; // Clear group chat
 
     const chatPlaceholder = document.getElementById("chatPlaceholder");
     const activeChat = document.getElementById("activeChat");
@@ -950,6 +1425,7 @@ class DashboardApp {
   async loadConnections() {
     console.log("Loading connections...");
     this.displayConnections(this.connectionState?.accepted || []);
+    this.displayIncomingRequests(this.connectionState?.pendingIncoming || []);
     this.displaySentRequests(this.connectionState?.pendingOutgoing || []);
   }
 
@@ -1059,9 +1535,6 @@ class DashboardApp {
               <button class="action-btn chat-btn" onclick="dashboard.startDynamicChat('${partnerPayload}')">
                 <i class="fas fa-comment"></i> Message
               </button>
-              <button class="action-btn video-call-btn" onclick="dashboard.startVideoCall('${partnerId}')">
-                <i class="fas fa-video"></i> Call
-              </button>
             </div>
           </div>
         `;
@@ -1075,6 +1548,58 @@ class DashboardApp {
     // This includes both pending and accepted sent requests
     const sentRequests = this.connectionState?.pendingOutgoing || [];
     this.displaySentRequests(sentRequests);
+  }
+
+  displayIncomingRequests(requests = []) {
+    const incomingList = document.getElementById("incomingRequestsList");
+    if (!incomingList) return;
+
+    if (!requests.length) {
+      incomingList.innerHTML = `
+        <div class="no-requests">
+          <i class="fas fa-inbox"></i>
+          <p>No pending connection requests</p>
+        </div>
+      `;
+      return;
+    }
+
+    incomingList.innerHTML = requests
+      .map((conn) => {
+        const requesterId = conn.requesterId;
+        const requesterName = conn.requesterName || "Student";
+        const requesterUniversity = conn.requesterUniversity || "Not specified";
+        const requesterCourse = conn.requesterCourse || "Not specified";
+        const createdAt = conn.createdAt?.toDate
+          ? conn.createdAt.toDate()
+          : conn.createdAt
+          ? new Date(conn.createdAt)
+          : new Date();
+
+        return `
+          <div class="request-item">
+            <div class="request-info">
+              <div class="request-avatar">
+                ${requesterName.charAt(0).toUpperCase()}
+              </div>
+              <div class="request-details">
+                <h4>${requesterName}</h4>
+                <p>${requesterCourse} • ${requesterUniversity}</p>
+                <small>Requested ${this.formatTime(createdAt)}</small>
+              </div>
+            </div>
+            <div class="request-actions">
+              <button class="action-btn accept-btn" onclick="dashboard.respondToConnection('${conn.id}', 'accept')">
+                <i class="fas fa-check"></i> Accept
+              </button>
+              <button class="action-btn reject-btn" onclick="dashboard.respondToConnection('${conn.id}', 'decline')">
+                <i class="fas fa-times"></i> Decline
+              </button>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
   }
 
   displaySentRequests(requests = []) {
@@ -1125,6 +1650,190 @@ class DashboardApp {
   loadUserData() {
     this.updateNotificationCounts();
     this.loadUserProfile();
+  }
+
+  /**
+   * Load dynamic suggestions based on current user's profile
+   * Fetches users from Firebase that match the current user's preferences
+   */
+  async loadSuggestions() {
+    const suggestionsContent = document.getElementById("suggestionsContent");
+    if (!suggestionsContent) return;
+
+    if (!this.currentUser) {
+      suggestionsContent.innerHTML = '<div class="no-suggestions"><i class="fas fa-user-slash"></i><p>Please login to see suggestions</p></div>';
+      return;
+    }
+
+    try {
+      suggestionsContent.innerHTML = '<div class="loading-suggestions"><i class="fas fa-spinner fa-spin"></i> Loading suggestions...</div>';
+
+      // Ensure Firebase is available
+      if (typeof authManager === "undefined" || !authManager.db) {
+        throw new Error("Database not available");
+      }
+
+      const db = authManager.db;
+      const currentUserId = this.currentUser.id;
+
+      // Get current user's preferences
+      const userCourse = (this.currentUser.course || "").toLowerCase();
+      const userCourseKeywords = (this.currentUser.courseKeywords || []).map(k => k.toLowerCase());
+      const userAvailability = this.currentUser.availability || "";
+      const userStudyType = this.currentUser.studyType || "";
+      const userUniversity = (this.currentUser.university || "").toLowerCase();
+      const userCountry = this.currentUser.countryCode || "";
+
+      // Query all active users (more inclusive)
+      let usersQuery = db.collection("users")
+        .where("deleted", "==", false)
+        .limit(50); // Get more users to find better matches
+
+      const usersSnapshot = await usersQuery.get();
+      const suggestions = [];
+
+      usersSnapshot.forEach(doc => {
+        const userData = doc.data();
+        const userId = doc.id;
+
+        // Skip current user
+        if (userId === currentUserId) return;
+
+        // Calculate match score - more inclusive algorithm
+        let matchScore = 0;
+        const otherCourse = (userData.course || "").toLowerCase();
+        const otherCourseKeywords = (userData.courseKeywords || []).map(k => k.toLowerCase());
+        const otherUniversity = (userData.university || "").toLowerCase();
+
+        // Course match - check for similar courses (more inclusive)
+        if (userCourse && otherCourse) {
+          // Exact match or contains
+          if (otherCourse.includes(userCourse) || userCourse.includes(otherCourse)) {
+            matchScore += 50;
+          }
+          // Check for keyword matches
+          else if (userCourseKeywords.length > 0 && otherCourseKeywords.length > 0) {
+            const commonKeywords = userCourseKeywords.filter(k => otherCourseKeywords.includes(k));
+            if (commonKeywords.length > 0) {
+              matchScore += 30 + (commonKeywords.length * 5); // 30 base + 5 per keyword
+            }
+          }
+          // Partial word matches (e.g., "Computer Science" matches "Computer")
+          else {
+            const userWords = userCourse.split(/\s+/);
+            const otherWords = otherCourse.split(/\s+/);
+            const commonWords = userWords.filter(w => w.length > 3 && otherWords.some(ow => ow.includes(w) || w.includes(ow)));
+            if (commonWords.length > 0) {
+              matchScore += 20 + (commonWords.length * 5);
+            }
+          }
+        }
+
+        // University match
+        if (userUniversity && otherUniversity && otherUniversity === userUniversity) {
+          matchScore += 15;
+        }
+
+        // Availability match
+        if (userAvailability && userData.availability === userAvailability) {
+          matchScore += 15;
+        }
+
+        // Study type match
+        if (userStudyType && userData.studyType === userStudyType) {
+          matchScore += 15;
+        }
+
+        // Country match (small bonus)
+        if (userCountry && userData.countryCode === userCountry) {
+          matchScore += 5;
+        }
+
+        // Include ALL users, even with low match scores (more inclusive)
+        // But prioritize those with at least some course similarity
+        if (matchScore > 0 || otherCourse) {
+          suggestions.push({
+            id: userId,
+            name: userData.name || "Student",
+            email: userData.email || "",
+            course: userData.course || "",
+            university: userData.university || "",
+            availability: userData.availability || "",
+            studyType: userData.studyType || "",
+            country: userData.country || "",
+            matchScore: matchScore || 5 // Minimum 5% for visibility
+          });
+        }
+      });
+
+      // Sort by match score (highest first) and take top 8 (more suggestions)
+      suggestions.sort((a, b) => b.matchScore - a.matchScore);
+      const topSuggestions = suggestions.slice(0, 8);
+
+      // Display suggestions
+      this.displaySuggestions(topSuggestions);
+
+      // Setup refresh button
+      const refreshBtn = document.getElementById("refreshSuggestionsBtn");
+      if (refreshBtn) {
+        refreshBtn.onclick = () => this.loadSuggestions();
+      }
+
+    } catch (error) {
+      console.error("Error loading suggestions:", error);
+      suggestionsContent.innerHTML = '<div class="no-suggestions"><i class="fas fa-exclamation-circle"></i><p>Unable to load suggestions</p></div>';
+    }
+  }
+
+  /**
+   * Display suggestions in the suggestions card
+   */
+  displaySuggestions(suggestions) {
+    const suggestionsContent = document.getElementById("suggestionsContent");
+    if (!suggestionsContent) return;
+
+    if (!suggestions || suggestions.length === 0) {
+      suggestionsContent.innerHTML = '<div class="no-suggestions"><i class="fas fa-users"></i><p>No matching partners found. Try adjusting your search!</p></div>';
+      return;
+    }
+
+    let html = '';
+    suggestions.forEach(suggestion => {
+      const initials = suggestion.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+      html += `
+        <div class="suggestion-item" onclick="dashboardApp.viewSuggestion('${suggestion.id}')">
+          <div class="suggestion-header">
+            <div class="suggestion-avatar">${initials}</div>
+            <div class="suggestion-info">
+              <h4>${suggestion.name}</h4>
+              <p>${suggestion.university || 'University not specified'}</p>
+            </div>
+          </div>
+          <div class="suggestion-details">
+            ${suggestion.course ? `<span class="suggestion-tag"><i class="fas fa-book"></i> ${suggestion.course}</span>` : ''}
+            ${suggestion.availability ? `<span class="suggestion-tag"><i class="fas fa-clock"></i> ${suggestion.availability}</span>` : ''}
+            ${suggestion.studyType ? `<span class="suggestion-tag"><i class="fas fa-users"></i> ${suggestion.studyType}</span>` : ''}
+          </div>
+          <div class="suggestion-match-score">
+            <i class="fas fa-star"></i> ${suggestion.matchScore}% Match
+          </div>
+        </div>
+      `;
+    });
+
+    suggestionsContent.innerHTML = html;
+  }
+
+  /**
+   * Handle clicking on a suggestion - pre-fill search form or show user details
+   */
+  viewSuggestion(userId) {
+    // For now, just scroll to search form
+    // Could be enhanced to pre-fill search or show user modal
+    const searchForm = document.getElementById("studySearchForm");
+    if (searchForm) {
+      searchForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 
   updateNotificationCounts() {

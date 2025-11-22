@@ -88,18 +88,27 @@
             </div>
 
             <div class="welcome-visual">
-              <img
-                src="assets/images/road.svg"
-                alt="Students collaborating on studies"
-                class="welcome-vector"
-                onerror="this.style.display='none'"
-              />
-              <div class="vector-fallback" style="display: none">
-                <div style="font-size: 48px; margin-bottom: 20px">
-                  <i class="fas fa-user-graduate"></i>
-                  <i class="fas fa-user-graduate"></i>
+              <!-- Weather Display -->
+              <div class="weather-widget" id="weatherWidget">
+                <div class="weather-loading">
+                  <i class="fas fa-spinner fa-spin"></i> Loading weather...
                 </div>
-                <p>Students Collaborating</p>
+              </div>
+              
+              <!-- Visual Elements -->
+              <div class="welcome-graphics">
+                <div class="graphic-circle circle-1"></div>
+                <div class="graphic-circle circle-2"></div>
+                <div class="graphic-circle circle-3"></div>
+                <div class="graphic-icon">
+                  <i class="fas fa-graduation-cap"></i>
+                </div>
+                <div class="graphic-icon icon-2">
+                  <i class="fas fa-book-open"></i>
+                </div>
+                <div class="graphic-icon icon-3">
+                  <i class="fas fa-users"></i>
+                </div>
               </div>
             </div>
           </div>
@@ -239,7 +248,7 @@
               <i class="fas fa-sign-in-alt"></i> Login to AcademicO
             </button>
             <div class="auth-links">
-              <a href="#" class="auth-link">
+              <a href="#" class="auth-link" id="showForgotPasswordModal">
                 <i class="fas fa-key"></i> Forgot password?
               </a>
               <span>•</span>
@@ -394,6 +403,83 @@
               </a>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal hidden" id="forgotPasswordModal">
+      <div class="modal-overlay" id="forgotPasswordOverlay"></div>
+      <div class="modal-content">
+        <button class="modal-close" id="closeForgotPassword">
+          <i class="fas fa-times"></i>
+        </button>
+        <div class="auth-card">
+          <div class="auth-header">
+            <h2>Reset Password</h2>
+            <p>Enter your email to reset your password</p>
+          </div>
+          <form class="auth-form" id="forgotPasswordForm">
+            <div class="form-group">
+              <label for="forgotPasswordEmail">
+                <i class="fas fa-envelope"></i> Email Address
+              </label>
+              <input
+                type="email"
+                id="forgotPasswordEmail"
+                placeholder="your.email@university.edu"
+                required
+              />
+            </div>
+            <button type="submit" class="auth-submit-btn">
+              <i class="fas fa-paper-plane"></i> Send Reset Link
+            </button>
+            <div class="auth-links">
+              <a href="#" class="auth-link" id="backToLoginFromForgot">
+                <i class="fas fa-arrow-left"></i> Back to Login
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Password Reset Success Modal -->
+    <div class="modal hidden" id="passwordResetSuccessModal">
+      <div class="modal-overlay" id="passwordResetSuccessOverlay"></div>
+      <div class="modal-content">
+        <button class="modal-close" id="closePasswordResetSuccess">
+          <i class="fas fa-times"></i>
+        </button>
+        <div class="auth-card">
+          <div class="auth-header">
+            <h2><i class="fas fa-check-circle" style="color: #27ae60;"></i> Password Reset Successful!</h2>
+            <p>Your temporary password has been generated</p>
+          </div>
+          <div class="password-reset-info">
+            <div class="info-box">
+              <p><strong>Note:</strong> In production, this password would be sent to your email address. For now, please copy the temporary password below.</p>
+            </div>
+            <div class="temp-password-container">
+              <label>Temporary Password:</label>
+              <div class="password-display">
+                <input type="text" id="tempPasswordDisplay" readonly value="" />
+                <button type="button" class="copy-password-btn" id="copyTempPassword">
+                  <i class="fas fa-copy"></i> Copy
+                </button>
+                <button type="button" class="copy-password-btn" id="testPasswordHash" style="margin-left: 10px; background: #27ae60;">
+                  <i class="fas fa-check"></i> Test Hash
+                </button>
+              </div>
+              <small><strong>Important:</strong> Please wait 5-10 seconds after resetting your password before logging in to ensure Firestore has saved the new password. Then login with this temporary password and change it immediately after logging in.</small>
+              <div id="passwordTestResult" style="margin-top: 10px; padding: 10px; border-radius: 5px; display: none; font-size: 12px;"></div>
+            </div>
+            <div class="auth-links" style="margin-top: 20px;">
+              <button type="button" class="auth-submit-btn" id="goToLoginAfterReset">
+                <i class="fas fa-sign-in-alt"></i> Go to Login
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

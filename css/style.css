@@ -22,6 +22,8 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 20px;
+    position: relative;
+    z-index: 2;
 }
 
 /* ===== UTILITY CLASSES ===== */
@@ -136,17 +138,41 @@ body {
 /* ===== WELCOME SECTION ===== */
 .welcome-section {
     padding: 120px 0 80px;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 50%, #f0f4f8 100%);
     min-height: 100vh;
     display: flex;
     align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.welcome-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 50%, rgba(74, 144, 226, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(44, 90, 160, 0.05) 0%, transparent 50%);
+    pointer-events: none;
 }
 
 .welcome-content {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1.2fr 1fr;
     gap: 60px;
     align-items: center;
+    position: relative;
+    z-index: 2;
+}
+
+@media (max-width: 1024px) {
+    .welcome-content {
+        grid-template-columns: 1fr;
+        gap: 40px;
+    }
 }
 
 .welcome-text h1 {
@@ -163,17 +189,6 @@ body {
     display: inline-block;
 }
 
-.welcome-highlight::after {
-    content: '';
-    position: absolute;
-    bottom: 5px;
-    left: 0;
-    width: 100%;
-    height: 8px;
-    background: #ffd93d;
-    opacity: 0.6;
-    z-index: -1;
-}
 
 .welcome-subtitle {
     font-size: 20px;
@@ -195,6 +210,8 @@ body {
     gap: 30px;
     margin: 40px 0;
     flex-wrap: wrap;
+    justify-content: center;
+    align-items: stretch;
 }
 
 .stat {
@@ -204,7 +221,9 @@ body {
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
     border: 1px solid #e9ecef;
-    min-width: 140px;
+    min-width: 180px;
+    flex: 1;
+    max-width: 250px;
     transition: transform 0.3s ease;
 }
 
@@ -214,10 +233,11 @@ body {
 
 .stat-number {
     display: block;
-    font-size: 36px;
+    font-size: 42px;
     font-weight: 700;
     color: #4a90e2;
     margin-bottom: 8px;
+    line-height: 1.2;
 }
 
 .stat-label {
@@ -275,16 +295,211 @@ body {
 /* ===== WELCOME VISUAL ===== */
 .welcome-visual {
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     position: relative;
+    min-height: 350px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 249, 250, 0.9) 100%);
+    border-radius: 24px;
+    padding: 0 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+    margin-top: -350px;
 }
 
-.welcome-vector {
+@media (max-width: 768px) {
+    .welcome-visual {
+        margin-top: 40px;
+    }
+}
+
+/* Weather Widget */
+.weather-widget {
     width: 100%;
-    max-width: 500px;
-    height: auto;
-    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.1));
+    max-width: 300px;
+    background: transparent;
+    border-radius: 16px;
+    padding: 25px;
+    box-shadow: none;
+    border: none;
+    margin: 0;
+    position: relative;
+    z-index: 5;
+}
+
+.weather-loading {
+    text-align: center;
+    color: #7f8c8d;
+    padding: 20px;
+}
+
+.weather-loading i {
+    font-size: 24px;
+    color: #4a90e2;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.weather-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    text-align: center;
+}
+
+.weather-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.weather-icon {
+    font-size: 48px;
+    color: #4a90e2;
+    flex-shrink: 0;
+}
+
+.weather-main {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: center;
+    text-align: center;
+}
+
+.weather-city {
+    font-size: 14px;
+    font-weight: 600;
+    color: #2c3e50;
+    text-transform: capitalize;
+}
+
+.weather-temp {
+    font-size: 36px;
+    font-weight: 700;
+    color: #4a90e2;
+    line-height: 1;
+}
+
+.weather-condition {
+    font-size: 14px;
+    color: #5d6d7e;
+    text-transform: capitalize;
+}
+
+.weather-tip {
+    font-size: 12px;
+    color: #5d6d7e;
+    font-style: italic;
+    margin-top: 10px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(233, 236, 239, 0.5);
+    line-height: 1.5;
+    text-align: center;
+}
+
+/* Welcome Graphics */
+.welcome-graphics {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.graphic-circle {
+    position: absolute;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(74, 144, 226, 0.08) 0%, rgba(44, 90, 160, 0.03) 100%);
+    animation: float 6s ease-in-out infinite;
+    filter: blur(1px);
+}
+
+.circle-1 {
+    width: 200px;
+    height: 200px;
+    top: -50px;
+    right: -50px;
+    animation-delay: 0s;
+}
+
+.circle-2 {
+    width: 150px;
+    height: 150px;
+    bottom: -30px;
+    left: -30px;
+    animation-delay: 2s;
+}
+
+.circle-3 {
+    width: 100px;
+    height: 100px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation-delay: 4s;
+}
+
+.graphic-icon {
+    position: absolute;
+    font-size: 56px;
+    color: rgba(74, 144, 226, 0.12);
+    animation: float 8s ease-in-out infinite;
+    filter: blur(0.5px);
+}
+
+.graphic-icon:first-of-type {
+    top: 20%;
+    right: 15%;
+    animation-delay: 1s;
+}
+
+.icon-2 {
+    bottom: 25%;
+    left: 20%;
+    animation-delay: 3s;
+}
+
+.icon-3 {
+    top: 60%;
+    right: 25%;
+    animation-delay: 5s;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px) translateX(0px);
+    }
+    50% {
+        transform: translateY(-20px) translateX(10px);
+    }
+}
+
+@media (max-width: 768px) {
+    .welcome-content {
+        grid-template-columns: 1fr;
+        gap: 40px;
+    }
+    
+    .welcome-visual {
+        min-height: 300px;
+        padding: 30px 20px;
+        margin-top: 15px;
+        margin-bottom: 40px;
+    }
+    
+    .weather-widget {
+        max-width: 100%;
+        margin-bottom: 20px;
+    }
 }
 
 /* ===== FEATURES SECTION ===== */
@@ -618,9 +833,11 @@ body {
 }
 
 .partner-actions {
-    display: flex;
+    display: flex !important;
     gap: 10px;
     margin-top: 20px;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 .action-btn {
@@ -632,15 +849,26 @@ body {
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
     gap: 6px;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 .chat-btn {
-    background: #4a90e2;
-    color: white;
+    background: #4a90e2 !important;
+    color: white !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: flex !important;
+    border: none !important;
+}
+
+.chat-btn:hover {
+    background: #2c5aa0 !important;
+    color: white !important;
 }
 
 .chat-btn:hover {
@@ -956,6 +1184,141 @@ body {
 
 .modal .auth-visual {
     display: none; /* Hide visual in modal for simplicity */
+}
+
+/* Password Reset Success Modal Styles */
+.password-reset-info {
+    padding: 20px 0;
+}
+
+.info-box {
+    background: #e3f2fd;
+    border-left: 4px solid #4a90e2;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+}
+
+.info-box p {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.temp-password-container {
+    margin: 25px 0;
+}
+
+.temp-password-container label {
+    display: block;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.password-display {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.password-display input {
+    flex: 1;
+    padding: 14px 16px;
+    border: 2px solid #4a90e2;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+    background: #f8f9fa;
+    color: #2c3e50;
+    text-align: center;
+    letter-spacing: 2px;
+}
+
+.copy-password-btn {
+    padding: 14px 20px;
+    background: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.copy-password-btn:hover {
+    background: #2c5aa0;
+    transform: translateY(-2px);
+}
+
+.temp-password-container small {
+    display: block;
+    color: #7f8c8d;
+    font-size: 12px;
+    margin-top: 8px;
+    font-style: italic;
+}
+
+/* Password Test Result Styling */
+#passwordTestResult {
+    margin-top: 15px;
+    padding: 15px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.6;
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+    word-break: break-word;
+}
+
+#passwordTestResult strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+#passwordTestResult br {
+    margin-bottom: 4px;
+}
+
+/* Success state (green) */
+#passwordTestResult[style*="background: #d4edda"],
+#passwordTestResult[style*="background:#d4edda"] {
+    background: #d4edda !important;
+    color: #155724 !important;
+    border-color: #c3e6cb;
+}
+
+/* Error state (red) */
+#passwordTestResult[style*="background: #f8d7da"],
+#passwordTestResult[style*="background:#f8d7da"] {
+    background: #f8d7da !important;
+    color: #721c24 !important;
+    border-color: #f5c6cb;
+}
+
+/* Info state (blue) */
+#passwordTestResult[style*="background: #e3f2fd"],
+#passwordTestResult[style*="background:#e3f2fd"] {
+    background: #e3f2fd !important;
+    color: #2c3e50 !important;
+    border-color: #90caf9;
+}
+
+/* Warning state (yellow) */
+#passwordTestResult[style*="background: #fff3cd"],
+#passwordTestResult[style*="background:#fff3cd"] {
+    background: #fff3cd !important;
+    color: #856404 !important;
+    border-color: #ffeaa7;
 }
 
 /* Chat Styles */

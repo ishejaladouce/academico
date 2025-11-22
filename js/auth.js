@@ -15,17 +15,41 @@ class AuthManager {
   async init() {
     await this.loadFirebase();
 
-    if (!firebase.apps.length) {
-      firebase.initializeApp(this.firebaseConfig);
+    // Check if Firebase is already initialized to avoid duplicate initialization
+    if (typeof firebase !== "undefined") {
+      if (!firebase.apps || firebase.apps.length === 0) {
+        firebase.initializeApp(this.firebaseConfig);
+      } else {
+        // Firebase already initialized, just get the existing app
+        console.log("Firebase already initialized, using existing instance");
+      }
+      this.db = firebase.firestore();
+      console.log("AcademicO Auth Ready");
+    } else {
+      console.error("Firebase failed to load");
     }
-    this.db = firebase.firestore();
-    console.log("AcademicO Auth Ready");
   }
 
   loadFirebase() {
     return new Promise((resolve) => {
-      if (typeof firebase !== "undefined" && firebase.apps.length > 0) {
+      // Check if Firebase is already loaded
+      if (typeof firebase !== "undefined" && firebase.apps && firebase.apps.length > 0) {
         resolve();
+        return;
+      }
+
+      // Check if scripts are already being loaded
+      const existingAppScript = document.querySelector('script[src*="firebase-app.js"]');
+      if (existingAppScript) {
+        // Wait for it to load
+        existingAppScript.onload = () => {
+          const existingFirestoreScript = document.querySelector('script[src*="firebase-firestore.js"]');
+          if (existingFirestoreScript) {
+            existingFirestoreScript.onload = resolve;
+          } else {
+            resolve();
+          }
+        };
         return;
       }
 
@@ -112,11 +136,49 @@ class AuthManager {
       const userDoc = snapshot.docs[0];
       const user = userDoc.data();
 
-      const hashedInput = await this.hashPassword(password);
+      // Trim the password input to ensure consistency
+      const trimmedPassword = String(password || "").trim();
+      
+      // Log the exact password being entered (for debugging - remove in production)
+      console.log(`Login attempt for ${email}`);
+      console.log(`Password entered (char codes): [${trimmedPassword.split('').map(c => c.charCodeAt(0)).join(', ')}]`);
+      console.log(`Password entered (length): ${trimmedPassword.length}`);
+      console.log(`Password entered (quoted): "${trimmedPassword}"`);
+      
+      const hashedInput = await this.hashPassword(trimmedPassword);
+      
+      console.log(`Stored hash length: ${user.passwordHash ? user.passwordHash.length : 0}`);
+      console.log(`Input hash length: ${hashedInput.length}`);
+      console.log(`Stored hash (first 40): ${user.passwordHash ? user.passwordHash.substring(0, 40) : 'NOT FOUND'}`);
+      console.log(`Input hash (first 40): ${hashedInput.substring(0, 40)}`);
+      console.log(`Hashes match: ${user.passwordHash === hashedInput}`);
 
-      if (!user.passwordHash || user.passwordHash !== hashedInput) {
+      if (!user.passwordHash) {
+        console.error("User has no password hash stored");
         throw new Error("Invalid password");
       }
+      
+      if (user.passwordHash !== hashedInput) {
+        console.error("Password hash mismatch - Full comparison:");
+        console.error(`Stored: ${user.passwordHash}`);
+        console.error(`Input:  ${hashedInput}`);
+        
+        // Try to help debug - check if there's a stored temp password
+        const storedTempPassword = localStorage.getItem(`temp_password_${email}`);
+        if (storedTempPassword) {
+          console.log(`Found stored temp password: "${storedTempPassword}"`);
+          const storedHash = await this.hashPassword(storedTempPassword);
+          console.log(`Stored temp password hash: ${storedHash}`);
+          console.log(`Does stored temp password match? ${storedHash === user.passwordHash}`);
+        }
+        
+        throw new Error("Invalid password");
+      }
+      
+      console.log("Password verified successfully");
+
+      // Clear the temporary password from localStorage after successful login
+      localStorage.removeItem(`temp_password_${email}`);
 
       // Store user in localStorage for session management
       const sanitizedUser = this.sanitizeUser(user);
@@ -273,14 +335,29 @@ class AuthManager {
   }
 
   async hashPassword(password) {
-    if (!window.crypto || !window.crypto.subtle) {
-      return password;
+    // Ensure password is a string and trim whitespace
+    const cleanPassword = String(password || "").trim();
+    
+    if (!cleanPassword) {
+      throw new Error("Password cannot be empty");
     }
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+    
+    if (!window.crypto || !window.crypto.subtle) {
+      console.warn("Crypto API not available, using plain password (not secure)");
+      return cleanPassword;
+    }
+    
+    try {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(cleanPassword);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hash = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+      return hash;
+    } catch (error) {
+      console.error("Error hashing password:", error);
+      throw new Error("Failed to hash password");
+    }
   }
 
   buildKeywords(value = "") {
@@ -294,6 +371,101 @@ class AuthManager {
     const sanitized = { ...user };
     delete sanitized.passwordHash;
     return sanitized;
+  }
+
+  /**
+   * Reset password for a user by email
+   * In a production environment, this would send an email with a reset link
+   * For now, we'll generate a temporary password and update it in Firestore
+   * 
+   * @param {string} email - User's email address
+   * @returns {Promise<void>}
+   */
+  async resetPassword(email) {
+    try {
+      if (!this.db) {
+        await this.init();
+      }
+
+      // Find user by email
+      const snapshot = await this.db
+        .collection("users")
+        .where("email", "==", email)
+        .limit(1)
+        .get();
+
+      if (snapshot.empty) {
+        throw new Error("No account found with this email address");
+      }
+
+      const userDoc = snapshot.docs[0];
+      const userData = userDoc.data();
+
+      // Generate a temporary password (longer and more secure)
+      // Use only alphanumeric characters to avoid encoding issues
+      const tempPassword = Math.random().toString(36).replace(/[^a-z0-9]/g, '').slice(-10) + 
+                          Math.random().toString(36).replace(/[^a-z0-9]/g, '').slice(-10);
+      const hashedPassword = await this.hashPassword(tempPassword);
+
+      console.log(`Resetting password for ${email}`);
+      console.log(`Temporary password (plain): "${tempPassword}"`);
+      console.log(`Temporary password length: ${tempPassword.length}`);
+      console.log(`Hashed password length: ${hashedPassword.length}`);
+      console.log(`Hashed password (first 40): ${hashedPassword.substring(0, 40)}...`);
+
+      // Update password in Firestore
+      await userDoc.ref.update({
+        passwordHash: hashedPassword,
+        passwordResetAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      // Verify the password was saved by reading it back (with retry for eventual consistency)
+      let savedHash = null;
+      let attempts = 0;
+      const maxAttempts = 5;
+      
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 300)); // Delay for Firestore consistency
+        const verifyDoc = await userDoc.ref.get();
+        const verifyData = verifyDoc.data();
+        savedHash = verifyData.passwordHash;
+        
+        console.log(`Verification attempt ${attempts + 1}/${maxAttempts}:`);
+        console.log(`  Saved hash: ${savedHash ? savedHash.substring(0, 40) + '...' : 'NOT FOUND'}`);
+        console.log(`  Expected:   ${hashedPassword.substring(0, 40)}...`);
+        console.log(`  Match: ${savedHash === hashedPassword}`);
+        
+        if (savedHash === hashedPassword) {
+          console.log("✓ Password hash verified successfully!");
+          break;
+        }
+        
+        attempts++;
+      }
+      
+      if (savedHash !== hashedPassword) {
+        console.error(`✗ Password hash mismatch after ${maxAttempts} attempts!`);
+        console.error(`  This might be a Firestore consistency issue.`);
+        console.error(`  Full stored hash: ${savedHash}`);
+        console.error(`  Full expected hash: ${hashedPassword}`);
+        // Still return the password - user can try logging in after waiting
+        console.warn("Returning temporary password anyway - please wait 3-5 seconds before logging in");
+      }
+
+      console.log(`Password reset completed for ${email}`);
+      console.log(`Temporary password: "${tempPassword}"`);
+      console.log(`Password length: ${tempPassword.length} characters`);
+      
+      // Store the temp password in localStorage temporarily for verification
+      // This will be cleared after successful login
+      localStorage.setItem(`temp_password_${email}`, tempPassword);
+      console.log(`Temporary password stored in localStorage for verification`);
+      
+      return { success: true, tempPassword, email };
+    } catch (error) {
+      console.error("Password reset error:", error);
+      throw error;
+    }
   }
 }
 

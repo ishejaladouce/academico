@@ -40,6 +40,16 @@ class AcademicOApp {
       this.closeModals();
       this.openModal("registerModal");
     });
+    this.safeAddEventListener("showForgotPasswordModal", "click", (e) => {
+      e.preventDefault();
+      this.closeModals();
+      this.openModal("forgotPasswordModal");
+    });
+    this.safeAddEventListener("backToLoginFromForgot", "click", (e) => {
+      e.preventDefault();
+      this.closeModals();
+      this.openModal("loginModal");
+    });
     this.safeAddEventListener("showLoginModal", "click", (e) => {
       e.preventDefault();
       this.closeModals();
@@ -51,10 +61,16 @@ class AcademicOApp {
     this.safeAddEventListener("closeRegister", "click", () =>
       this.closeModals()
     );
+    this.safeAddEventListener("closeForgotPassword", "click", () =>
+      this.closeModals()
+    );
     this.safeAddEventListener("loginOverlay", "click", () =>
       this.closeModals()
     );
     this.safeAddEventListener("registerOverlay", "click", () =>
+      this.closeModals()
+    );
+    this.safeAddEventListener("forgotPasswordOverlay", "click", () =>
       this.closeModals()
     );
 
@@ -65,6 +81,125 @@ class AcademicOApp {
     this.safeAddEventListener("registerForm", "submit", (e) =>
       this.handleRegister(e)
     );
+    this.safeAddEventListener("forgotPasswordForm", "submit", (e) =>
+      this.handleForgotPassword(e)
+    );
+    this.safeAddEventListener("closePasswordResetSuccess", "click", () =>
+      this.closeModals()
+    );
+    this.safeAddEventListener("passwordResetSuccessOverlay", "click", () =>
+      this.closeModals()
+    );
+    this.safeAddEventListener("goToLoginAfterReset", "click", () => {
+      this.closeModals();
+      this.openModal("loginModal");
+    });
+    this.safeAddEventListener("copyTempPassword", "click", () => {
+      const tempPasswordInput = document.getElementById("tempPasswordDisplay");
+      if (tempPasswordInput) {
+        // Don't trim - copy exactly as displayed
+        const password = tempPasswordInput.value;
+        console.log(`Copying password: "${password}" (length: ${password.length})`);
+        
+        try {
+          // Use modern Clipboard API if available
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(password).then(() => {
+              errorHandler.showSuccess("Password copied to clipboard!");
+            }).catch(() => {
+              // Fallback to execCommand
+              tempPasswordInput.select();
+              document.execCommand("copy");
+              errorHandler.showSuccess("Password copied to clipboard!");
+            });
+          } else {
+            // Fallback for older browsers
+            tempPasswordInput.select();
+            tempPasswordInput.setSelectionRange(0, 99999); // For mobile devices
+            document.execCommand("copy");
+            errorHandler.showSuccess("Password copied to clipboard!");
+          }
+        } catch (err) {
+          console.error("Failed to copy password:", err);
+          errorHandler.showUserError("Failed to copy. Please select and copy manually.");
+        }
+      }
+    });
+
+    // Test password hash button
+    this.safeAddEventListener("testPasswordHash", "click", async () => {
+      const tempPasswordInput = document.getElementById("tempPasswordDisplay");
+      const resultDiv = document.getElementById("passwordTestResult");
+      
+      if (!tempPasswordInput || !resultDiv) return;
+      
+      const password = tempPasswordInput.value;
+      if (!password) {
+        resultDiv.style.display = "block";
+        resultDiv.style.background = "#fee";
+        resultDiv.style.color = "#c00";
+        resultDiv.innerHTML = "No password to test";
+        return;
+      }
+      
+      resultDiv.style.display = "block";
+      resultDiv.style.background = "#e3f2fd";
+      resultDiv.style.color = "#2c3e50";
+      resultDiv.innerHTML = "Testing password hash...";
+      
+      try {
+        const hashedPassword = await authManager.hashPassword(password);
+        const email = document.getElementById("forgotPasswordEmail")?.value || 
+                     localStorage.getItem("last_reset_email") || "unknown";
+        
+        // Try to get the stored hash from Firestore
+        if (authManager.db) {
+          const snapshot = await authManager.db
+            .collection("users")
+            .where("email", "==", email)
+            .limit(1)
+            .get();
+          
+          if (!snapshot.empty) {
+            const user = snapshot.docs[0].data();
+            const storedHash = user.passwordHash;
+            
+            const matches = storedHash === hashedPassword;
+            
+            resultDiv.style.background = matches ? "#d4edda" : "#f8d7da";
+            resultDiv.style.color = matches ? "#155724" : "#721c24";
+            resultDiv.innerHTML = `
+              <strong>Hash Test Result:</strong><br>
+              Password: "${password}" (length: ${password.length})<br>
+              Generated Hash: ${hashedPassword.substring(0, 40)}...<br>
+              Stored Hash: ${storedHash ? storedHash.substring(0, 40) + '...' : 'NOT FOUND'}<br>
+              <strong style="color: ${matches ? '#155724' : '#721c24'}">
+                ${matches ? '✓ HASHES MATCH!' : '✗ HASHES DO NOT MATCH'}
+              </strong>
+            `;
+            
+            console.log("Password hash test:");
+            console.log(`  Password: "${password}"`);
+            console.log(`  Generated hash: ${hashedPassword}`);
+            console.log(`  Stored hash: ${storedHash}`);
+            console.log(`  Match: ${matches}`);
+          } else {
+            resultDiv.style.background = "#fff3cd";
+            resultDiv.style.color = "#856404";
+            resultDiv.innerHTML = "Could not find user in database";
+          }
+        } else {
+          resultDiv.style.background = "#fff3cd";
+          resultDiv.style.color = "#856404";
+          resultDiv.innerHTML = "Database not initialized";
+        }
+      } catch (error) {
+        resultDiv.style.background = "#fee";
+        resultDiv.style.color = "#c00";
+        resultDiv.innerHTML = `Error: ${error.message}`;
+        console.error("Password hash test error:", error);
+      }
+    });
     this.safeAddEventListener("studySearchForm", "submit", (e) =>
       this.handleSearch(e)
     );
@@ -175,8 +310,8 @@ class AcademicOApp {
     e.preventDefault();
     this.showLoading("Signing you in...");
 
-    const email = document.getElementById("loginEmail").value;
-    const password = document.getElementById("loginPassword").value;
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value.trim();
 
     if (!email || !password) {
       errorHandler.showUserError("Please fill in all fields");
@@ -195,6 +330,58 @@ class AcademicOApp {
     } catch (error) {
       errorHandler.showUserError(
         "Invalid email or password. Please try again."
+      );
+    } finally {
+      this.hideLoading();
+    }
+  }
+
+  async handleForgotPassword(e) {
+    e.preventDefault();
+    this.showLoading("Processing your request...");
+
+    const email = document.getElementById("forgotPasswordEmail").value;
+
+    if (!email) {
+      errorHandler.showUserError("Please enter your email address");
+      this.hideLoading();
+      return;
+    }
+
+    try {
+      const result = await authManager.resetPassword(email);
+      
+      // Close forgot password modal
+      this.closeModals();
+      
+      // Show the password reset success modal with the temporary password
+      const tempPasswordDisplay = document.getElementById("tempPasswordDisplay");
+      if (tempPasswordDisplay && result.tempPassword) {
+        // Set the password value exactly as generated (no modifications)
+        tempPasswordDisplay.value = result.tempPassword;
+        console.log(`Displaying temp password in modal: "${result.tempPassword}"`);
+        console.log(`Password length: ${result.tempPassword.length}`);
+        
+        // Store email for hash testing
+        localStorage.setItem("last_reset_email", email);
+      }
+      
+      // Clear any previous test results
+      const testResult = document.getElementById("passwordTestResult");
+      if (testResult) {
+        testResult.style.display = "none";
+      }
+      
+      // Show success modal after a delay to ensure password is saved in Firestore
+      setTimeout(() => {
+        this.openModal("passwordResetSuccessModal");
+      }, 1000);
+      
+      // Clear the form
+      document.getElementById("forgotPasswordForm").reset();
+    } catch (error) {
+      errorHandler.showUserError(
+        error.message || "Unable to process password reset. Please try again."
       );
     } finally {
       this.hideLoading();
@@ -700,42 +887,106 @@ class AcademicOApp {
   // ==================== DYNAMIC CONTENT ====================
 
   async animateStatistics() {
-    const stats = await this.getLiveStatistics();
+    try {
+      const stats = await this.getLiveStatistics();
+      
+      console.log("Fetched statistics:", stats);
 
-    Object.keys(stats).forEach((stat, index) => {
-      const element = document.getElementById(stat + "Count");
-      if (element) {
-        this.animateCount(element, 0, stats[stat], 2000 + index * 500);
-      }
-    });
+      // Map the stats keys to the actual element IDs
+      const statMapping = {
+        students: "studentsCount",
+        studyGroups: "studyGroupsCount",
+        courses: "coursesCount"
+      };
+
+      Object.keys(statMapping).forEach((statKey, index) => {
+        const elementId = statMapping[statKey];
+        const element = document.getElementById(elementId);
+        if (element) {
+          const value = stats[statKey] || 0;
+          console.log(`Animating ${elementId} from 0 to ${value}`);
+          this.animateCount(element, 0, value, 2000 + index * 500);
+        } else {
+          console.warn(`Element with ID ${elementId} not found`);
+        }
+      });
+    } catch (error) {
+      console.error("Error animating statistics:", error);
+      // Set default values if there's an error
+      const defaultElements = {
+        studentsCount: 0,
+        studyGroupsCount: 0,
+        coursesCount: 0
+      };
+      Object.keys(defaultElements).forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.textContent = defaultElements[id];
+        }
+      });
+    }
   }
 
   async getLiveStatistics() {
     try {
-      if (authManager.db) {
-        const usersSnapshot = await authManager.db.collection("users").get();
-        const userCount = usersSnapshot.size;
-
-        const courses = new Set();
-        usersSnapshot.forEach((doc) => {
-          const userData = doc.data();
-          if (userData.course) courses.add(userData.course);
-        });
-
-        return {
-          students: userCount || 1250,
-          groups: Math.max(1, Math.floor((userCount || 1250) / 3)),
-          courses: Math.max(1, courses.size || 45),
-        };
+      console.log("Fetching live statistics from Firebase...");
+      
+      // Ensure Firebase is initialized
+      if (!authManager.db) {
+        console.log("Initializing Firebase...");
+        await authManager.init();
       }
+      
+      if (!authManager.db) {
+        console.error("Firebase database not available after initialization");
+        throw new Error("Database not available");
+      }
+      
+      console.log("Fetching data from Firestore...");
+      
+      // Fetch all users (not filtered by deleted) to match admin dashboard
+      const [usersSnapshot, groupsSnapshot] = await Promise.all([
+        authManager.db.collection("users").get(),
+        authManager.db.collection("studyGroups").get()
+      ]);
+      
+      console.log(`Fetched ${usersSnapshot.size} users, ${groupsSnapshot.size} groups`);
+      
+      // Count active users (not deleted) - this is "Students Connected"
+      const activeUsers = usersSnapshot.docs.filter(doc => {
+        const data = doc.data();
+        return !data.deleted;
+      }).length;
+      
+      const groupCount = groupsSnapshot.size;
+      
+      // Count unique courses from all users (including deleted for course count)
+      const courses = new Set();
+      usersSnapshot.forEach((doc) => {
+        const userData = doc.data();
+        if (userData.course && userData.course.trim()) {
+          courses.add(userData.course.trim().toLowerCase());
+        }
+      });
+
+      const stats = {
+        students: activeUsers || 0,
+        studyGroups: groupCount || 0,
+        courses: courses.size || 0,
+      };
+
+      console.log(`Statistics loaded: ${stats.students} active users, ${stats.studyGroups} groups, ${stats.courses} unique courses`);
+      
+      return stats;
     } catch (error) {
-      console.log("Using dynamic fallback statistics");
+      console.error("Error fetching statistics:", error);
     }
 
+    // Return zeros if we can't fetch from Firebase
     return {
-      students: 1250,
-      groups: 420,
-      courses: 45,
+      students: 0,
+      studyGroups: 0,
+      courses: 0,
     };
   }
 
@@ -960,11 +1211,8 @@ class AcademicOApp {
   }
 
   displayAPIFeatures(timezoneData, weatherData, quoteData) {
-    // Display timezone compatibility info
-    this.displayTimezoneInfo(timezoneData);
-
-    // Display weather-based study suggestion
-    this.displayWeatherSuggestion(weatherData);
+    // Display weather on top of PNG image (not in feature cards)
+    this.displayWeatherOnImage(weatherData);
 
     // Display motivational quote
     this.displayStudyQuote(quoteData);
@@ -973,41 +1221,45 @@ class AcademicOApp {
     this.showAPIStatus();
   }
 
-  displayTimezoneInfo(timezoneData) {
-    const timezoneElement = document.createElement("div");
-    timezoneElement.className = "api-feature timezone-info";
-    timezoneElement.innerHTML = `
-        <div class="feature-card">
-            <div class="feature-icon"><i class="fas fa-globe-americas"></i></div>
-            <h4>Timezone Smart Matching</h4>
-            <p>Your timezone: <strong>${timezoneData.timezone}</strong></p>
-            <p>We'll find partners in compatible time zones for better study sessions</p>
-            <small>Powered by ${timezoneData.source}</small>
+  displayWeatherOnImage(weatherData) {
+    // Display weather in the weather widget
+    const weatherWidget = document.getElementById("weatherWidget");
+    if (weatherWidget) {
+      const weatherIcon = this.getWeatherIcon(weatherData.conditions);
+      
+      weatherWidget.innerHTML = `
+        <div class="weather-content">
+          <div class="weather-header">
+            <div class="weather-icon">${weatherIcon}</div>
+            <div class="weather-main">
+              <div class="weather-city">${weatherData.city || "Your Location"}</div>
+              <div class="weather-temp">${weatherData.temperature}°C</div>
+              <div class="weather-condition">${weatherData.conditions}</div>
+            </div>
+          </div>
+          <div class="weather-tip">
+            <i class="fas fa-lightbulb"></i> ${weatherData.studySuggestion || "Great weather for studying!"}
+          </div>
         </div>
-    `;
-
-    const featuresGrid = document.querySelector(".features-grid");
-    if (featuresGrid) {
-      featuresGrid.appendChild(timezoneElement);
+      `;
     }
   }
 
-  displayWeatherSuggestion(weatherData) {
-    const weatherElement = document.createElement("div");
-    weatherElement.className = "api-feature weather-suggestion";
-    weatherElement.innerHTML = `
-        <div class="feature-card">
-            <div class="feature-icon"><i class="fas fa-cloud-sun"></i></div>
-            <h4>Study Environment</h4>
-            <p>${weatherData.city}: ${weatherData.temperature}°C, ${weatherData.conditions}</p>
-            <p><strong>Tip:</strong> ${weatherData.studySuggestion}</p>
-            <small>Powered by ${weatherData.source}</small>
-        </div>
-    `;
-
-    const featuresGrid = document.querySelector(".features-grid");
-    if (featuresGrid) {
-      featuresGrid.appendChild(weatherElement);
+  getWeatherIcon(conditions) {
+    if (!conditions) return '<i class="fas fa-sun"></i>';
+    const cond = conditions.toLowerCase();
+    if (cond.includes('rain') || cond.includes('drizzle')) {
+      return '<i class="fas fa-cloud-rain"></i>';
+    } else if (cond.includes('cloud')) {
+      return '<i class="fas fa-cloud"></i>';
+    } else if (cond.includes('sun') || cond.includes('clear')) {
+      return '<i class="fas fa-sun"></i>';
+    } else if (cond.includes('snow')) {
+      return '<i class="fas fa-snowflake"></i>';
+    } else if (cond.includes('storm') || cond.includes('thunder')) {
+      return '<i class="fas fa-bolt"></i>';
+    } else {
+      return '<i class="fas fa-cloud-sun"></i>';
     }
   }
 
@@ -1060,25 +1312,13 @@ class AcademicOApp {
   }
 
   updateAPIStats() {
-    // Update statistics with API data
+    // API stats are tracked internally but not displayed on the index page
+    // This keeps the UI clean and focused on user-facing statistics
     const stats = enhancedAPI.getAPIStats();
-    const apiStatsElement = document.getElementById("apiStats");
-
-    if (!apiStatsElement) {
-      // Create API stats element if it doesn't exist
-      const statsContainer = document.querySelector(".stats-container");
-      if (statsContainer) {
-        const apiStatElement = document.createElement("div");
-        apiStatElement.className = "stat";
-        apiStatElement.id = "apiStats";
-        apiStatElement.innerHTML = `
-                <span class="stat-number">${stats.activeAPIs}/${stats.totalAPIs}</span>
-                <span class="stat-label">
-                    <i class="fas fa-plug"></i> APIs Active
-                </span>
-            `;
-        statsContainer.appendChild(apiStatElement);
-      }
+    console.log("API Usage Statistics:", stats);
+    // Stats are available for admin dashboard if needed
+    if (typeof window !== "undefined") {
+      window.apiStats = stats;
     }
   }
 }
