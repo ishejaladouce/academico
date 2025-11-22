@@ -1,15 +1,5 @@
-/**
- * Admin Dashboard Management Class
- * Handles all admin dashboard functionality including statistics, user management,
- * recent activities, and settings. All data is fetched directly from Firebase Firestore.
- * 
- * @class AdminDashboard
- */
+// Admin Dashboard - handles statistics, user management, and platform settings
 class AdminDashboard {
-  /**
-   * Initialize the AdminDashboard class
-   * Sets up initial statistics object and database reference
-   */
   constructor() {
     this.stats = {
       totalUsers: 0,
@@ -23,13 +13,7 @@ class AdminDashboard {
     this.db = null;
   }
 
-  /**
-   * Ensure Firebase is initialized and available
-   * Waits for Firebase to load if not immediately available, then initializes Firestore
-   * 
-   * @returns {Promise<Object>} Firebase Firestore database instance
-   * @throws {Error} If Firebase configuration is missing or Firestore is unavailable
-   */
+  // Make sure Firebase is ready before using it
   async ensureFirebase() {
     if (this.db) return this.db;
 
@@ -63,29 +47,31 @@ class AdminDashboard {
     throw new Error("Firebase Firestore not available");
   }
 
-  /**
-   * Initialize the admin dashboard
-   * Checks admin authentication, sets up event listeners, and loads initial data
-   * Redirects to index.html if admin is not logged in
-   */
+  // Start up the admin dashboard
   async init() {
-    if (!adminAuth.isAdminLoggedIn()) {
+    if (!adminAuth || !adminAuth.isAdminLoggedIn()) {
       window.location.href = "index.html";
       return;
     }
 
-    this.setupAdminEventListeners();
-    await this.loadAdminStats();
-    await this.loadRecentActivities();
-    this.updateAdminUI();
-    // Update API status after a delay to ensure enhancedAPI is initialized
-    setTimeout(() => this.updateAPIStatus(), 1000);
+    try {
+      this.setupAdminEventListeners();
+      await this.loadAdminStats();
+      await this.loadRecentActivities();
+      this.updateAdminUI();
+      
+      // Update API status after a delay to ensure enhancedAPI is initialized
+      setTimeout(() => {
+        if (typeof this.updateAPIStatus === "function") {
+          this.updateAPIStatus();
+        }
+      }, 1000);
+    } catch (error) {
+      console.error("Error initializing admin dashboard:", error);
+    }
   }
 
-  /**
-   * Set up all event listeners for admin dashboard interactions
-   * Handles logout, navigation, menu dropdown, and action buttons
-   */
+  // Set up click handlers and event listeners
   setupAdminEventListeners() {
     // Admin logout
     const adminLogoutBtn = document.getElementById("adminLogoutBtn");
@@ -105,10 +91,10 @@ class AdminDashboard {
 
     // Admin navigation - using nav-link class like user dashboard
     document.querySelectorAll(".nav-link[data-section]").forEach((link) => {
-      link.addEventListener("click", (e) => {
+      link.addEventListener("click", async (e) => {
         e.preventDefault();
         const section = link.getAttribute("data-section");
-        this.showAdminSection(section);
+        await this.showAdminSection(section);
         
         // Update active nav
         document.querySelectorAll(".nav-link").forEach(l => l.classList.remove("active"));
@@ -132,6 +118,8 @@ class AdminDashboard {
           adminDropdown.classList.add("hidden");
         }
       });
+    } else {
+      console.error("Admin menu button or dropdown not found");
     }
 
     // Quick action buttons
@@ -245,13 +233,7 @@ class AdminDashboard {
     return demoData[endpoint] || null;
   }
 
-  /**
-   * Load admin statistics from Firebase Firestore
-   * Fetches real-time data including total users, active users, messages, connections, and groups
-   * Updates the UI with the fetched statistics
-   * 
-   * @returns {Promise<void>}
-   */
+  // Load statistics from Firebase
   async loadAdminStats() {
     const refreshStatsBtn = document.getElementById("refreshStatsBtn");
     const statsGrid = document.getElementById("adminStatsGrid");
@@ -333,10 +315,7 @@ class AdminDashboard {
     }
   }
 
-  /**
-   * Update the statistics UI elements with current stats
-   * Formats numbers with locale-specific formatting (e.g., 1,000)
-   */
+  // Update the stats display on the page
   updateStatsUI() {
     // Update stats using analytics-value elements (analytics card style)
     const totalUsersEl = document.getElementById("adminTotalUsers");
@@ -357,10 +336,7 @@ class AdminDashboard {
     setTimeout(() => this.updateAPIStatus(), 300);
   }
 
-  /**
-   * Update API status display in admin dashboard
-   * Shows working APIs count (e.g., 3/3 or 3/4)
-   */
+  // Show how many APIs are working
   updateAPIStatus() {
     const apiStatusEl = document.getElementById("adminAPIStatus");
     if (!apiStatusEl) return;
@@ -395,13 +371,7 @@ class AdminDashboard {
     }
   }
 
-  /**
-   * Load recent activities from Firebase Firestore
-   * Fetches user signups, connections, and messages, sorts by timestamp, and displays top 8
-   * Activities are read-only and automatically generated from platform events
-   * 
-   * @returns {Promise<void>}
-   */
+  // Get recent activity from the platform
   async loadRecentActivities() {
     const refreshActivitiesBtn = document.getElementById("refreshActivitiesBtn");
     const container = document.getElementById("recentActivities");
@@ -574,13 +544,7 @@ class AdminDashboard {
     }
   }
 
-  /**
-   * Display recent activities in the UI
-   * Renders activities with icons, descriptions, and timestamps
-   * Supports edit mode for visual editing (activities are read-only in database)
-   * 
-   * @param {Array} activities - Array of activity objects with type, description, and timestamp
-   */
+  // Show the activities list
   displayRecentActivities(activities) {
     const container = document.getElementById("recentActivities");
     if (!container) return;
@@ -704,13 +668,8 @@ class AdminDashboard {
     return icons[type] || "circle";
   }
 
-  /**
-   * Show a specific admin dashboard section and hide others
-   * Updates navigation active state and loads section-specific data if needed
-   * 
-   * @param {string} sectionId - The ID of the section to show (e.g., "adminDashboardSection")
-   */
-  showAdminSection(sectionId) {
+  // Switch between dashboard sections
+  async showAdminSection(sectionId) {
     // Hide all dashboard sections - using dashboard-section class like user dashboard
     document.querySelectorAll(".dashboard-section").forEach((section) => {
       section.classList.remove("active");
@@ -733,24 +692,35 @@ class AdminDashboard {
     });
 
     // Load section-specific data
-    if (sectionId === "adminUsersSection") {
-      if (typeof adminUsersManager !== "undefined") {
-      adminUsersManager.loadUsers();
-      } else {
-        console.error('adminUsersManager not available');
+    try {
+      if (sectionId === "adminUsersSection") {
+        if (typeof adminUsersManager !== "undefined" && adminUsersManager) {
+          await adminUsersManager.loadUsers();
+        } else {
+          console.error('adminUsersManager not available');
+          const tableBody = document.getElementById("adminUsersTableBody");
+          if (tableBody) {
+            tableBody.innerHTML = `
+              <tr>
+                <td colspan="9" style="text-align: center; padding: 40px; color: #e74c3c;">
+                  <i class="fas fa-exclamation-triangle"></i> Error: Users manager not loaded. Please refresh the page.
+                </td>
+              </tr>
+            `;
+          }
+        }
+      } else if (sectionId === "adminDashboardSection") {
+        await this.loadAdminStats();
+        await this.loadRecentActivities();
+      } else if (sectionId === "adminSettingsSection") {
+        await this.loadSettings();
       }
-    } else if (sectionId === "adminDashboardSection") {
-      this.loadAdminStats();
-      this.loadRecentActivities();
-    } else if (sectionId === "adminSettingsSection") {
-      this.loadSettings();
+    } catch (error) {
+      console.error("Error loading section data:", error);
     }
   }
 
-  /**
-   * Update admin UI elements with current admin information
-   * Displays admin name and role in the header
-   */
+  // Update the admin info shown in the header
   updateAdminUI() {
     const currentAdmin = adminAuth.getCurrentAdmin();
     if (currentAdmin) {
@@ -767,10 +737,7 @@ class AdminDashboard {
     }
   }
 
-  /**
-   * Export admin data to CSV file
-   * Fetches data directly from Firebase Firestore and exports as CSV
-   */
+  // Download all data as a CSV file
   async exportAdminData() {
     try {
       this.showLoading("export");
@@ -872,11 +839,7 @@ class AdminDashboard {
     }
   }
 
-  /**
-   * Convert export data to CSV format
-   * @param {Object} data - The data object containing stats, users, connections, and conversations
-   * @returns {string} CSV formatted string
-   */
+  // Turn data into CSV format
   convertToCSV(data) {
     const lines = [];
     const exportDate = new Date().toISOString();
@@ -1012,13 +975,7 @@ class AdminDashboard {
     }, 5000);
   }
 
-  /**
-   * Format a date to a human-readable relative time string
-   * Returns "Just now", "5m ago", "2h ago", or a formatted date
-   * 
-   * @param {Date|string|number} date - The date to format
-   * @returns {string} Formatted time string
-   */
+  // Make dates readable like "5m ago" or "2h ago"
   formatTime(date) {
     if (!date) return "Unknown";
     if (!(date instanceof Date)) date = new Date(date);
@@ -1115,10 +1072,7 @@ class AdminDashboard {
     }
   }
 
-  /**
-   * Load and display admin settings with functional features
-   * Includes database info, platform statistics, and admin actions
-   */
+  // Load the settings page
   async loadSettings() {
     const settingsContent = document.getElementById("adminSettingsContent");
     if (!settingsContent) return;
@@ -1217,9 +1171,7 @@ class AdminDashboard {
     }
   }
 
-  /**
-   * Refresh all dashboard data
-   */
+  // Refresh all dashboard data
   async refreshAllData() {
     try {
       this.showSuccess("Refreshing all data...");
@@ -1234,9 +1186,7 @@ class AdminDashboard {
     }
   }
 
-  /**
-   * Clear browser cache and localStorage (except admin session)
-   */
+  // Clear browser cache and localStorage (except admin session)
   clearCache() {
     if (confirm("This will clear all cached data except your admin session. Continue?")) {
       try {
@@ -1256,9 +1206,7 @@ class AdminDashboard {
     }
   }
 
-  /**
-   * Show security information
-   */
+  // Show security information
   showSecurityInfo() {
     const info = `
       <div style="text-align: left; padding: 20px;">
@@ -1279,9 +1227,7 @@ class AdminDashboard {
     this.showSuccess("Security information displayed");
   }
 
-  /**
-   * Show system information
-   */
+  // Show system information
   showSystemInfo() {
     const info = `
       <div style="text-align: left; padding: 20px;">

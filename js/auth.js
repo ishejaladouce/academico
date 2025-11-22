@@ -23,8 +23,22 @@ class AuthManager {
         // Firebase already initialized, just get the existing app
         console.log("Firebase already initialized, using existing instance");
       }
-      this.db = firebase.firestore();
-      console.log("AcademicO Auth Ready");
+      
+      // Make sure firestore is available before using it
+      if (typeof firebase.firestore === "function") {
+        this.db = firebase.firestore();
+        console.log("AcademicO Auth Ready");
+      } else {
+        console.error("Firestore not loaded yet, waiting...");
+        // Wait a bit and try again
+        await new Promise(resolve => setTimeout(resolve, 500));
+        if (typeof firebase.firestore === "function") {
+          this.db = firebase.firestore();
+          console.log("AcademicO Auth Ready");
+        } else {
+          console.error("Firestore failed to load");
+        }
+      }
     } else {
       console.error("Firebase failed to load");
     }
@@ -32,8 +46,8 @@ class AuthManager {
 
   loadFirebase() {
     return new Promise((resolve) => {
-      // Check if Firebase is already loaded
-      if (typeof firebase !== "undefined" && firebase.apps && firebase.apps.length > 0) {
+      // Check if Firebase and Firestore are already loaded
+      if (typeof firebase !== "undefined" && typeof firebase.firestore === "function") {
         resolve();
         return;
       }
@@ -41,15 +55,21 @@ class AuthManager {
       // Check if scripts are already being loaded
       const existingAppScript = document.querySelector('script[src*="firebase-app.js"]');
       if (existingAppScript) {
-        // Wait for it to load
-        existingAppScript.onload = () => {
-          const existingFirestoreScript = document.querySelector('script[src*="firebase-firestore.js"]');
-          if (existingFirestoreScript) {
-            existingFirestoreScript.onload = resolve;
-          } else {
+        // Wait for both scripts to load
+        const checkFirestore = () => {
+          if (typeof firebase !== "undefined" && typeof firebase.firestore === "function") {
             resolve();
+          } else {
+            const existingFirestoreScript = document.querySelector('script[src*="firebase-firestore.js"]');
+            if (existingFirestoreScript) {
+              existingFirestoreScript.onload = resolve;
+            } else {
+              setTimeout(checkFirestore, 100);
+            }
           }
         };
+        existingAppScript.onload = checkFirestore;
+        checkFirestore();
         return;
       }
 
@@ -57,9 +77,16 @@ class AuthManager {
       script.src = "https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js";
       script.onload = () => {
         const script2 = document.createElement("script");
-        script2.src =
-          "https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js";
-        script2.onload = resolve;
+        script2.src = "https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js";
+        script2.onload = () => {
+          // Make sure firestore is actually available
+          if (typeof firebase !== "undefined" && typeof firebase.firestore === "function") {
+            resolve();
+          } else {
+            console.error("Firestore script loaded but firestore function not available");
+            resolve(); // Resolve anyway to prevent hanging
+          }
+        };
         document.head.appendChild(script2);
       };
       document.head.appendChild(script);
@@ -119,10 +146,18 @@ class AuthManager {
     }
   }
 
-  // User login - FIXED PASSWORD VALIDATION
+  // User login
   async loginUser(email, password) {
     try {
-      // For demo purposes, we'll search for the user in Firestore
+      if (!this.db) {
+        await this.init();
+      }
+      
+      if (!this.db) {
+        throw new Error("Database not available. Please refresh the page.");
+      }
+      
+      // Search for the user in Firestore
       const snapshot = await this.db
         .collection("users")
         .where("email", "==", email)
@@ -373,14 +408,7 @@ class AuthManager {
     return sanitized;
   }
 
-  /**
-   * Reset password for a user by email
-   * In a production environment, this would send an email with a reset link
-   * For now, we'll generate a temporary password and update it in Firestore
-   * 
-   * @param {string} email - User's email address
-   * @returns {Promise<void>}
-   */
+  // Generate a temporary password for password reset
   async resetPassword(email) {
     try {
       if (!this.db) {

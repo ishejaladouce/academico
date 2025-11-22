@@ -289,10 +289,7 @@ class DashboardApp {
     console.log("Event listeners setup complete");
   }
 
-  /**
-   * Apply theme (dark or light mode)
-   * @param {string} theme - 'dark' or 'light'
-   */
+  // Switch between dark and light mode
   applyTheme(theme) {
     const isDark = theme === "dark";
     document.documentElement.classList.toggle("dark-mode", isDark);
@@ -303,9 +300,7 @@ class DashboardApp {
     }
   }
 
-  /**
-   * Show the search form
-   */
+  // Show the search form
   showSearchForm() {
     const searchCard = document.getElementById("searchCard");
     const exploreContainer = document.getElementById("exploreSearchContainer");
@@ -323,9 +318,7 @@ class DashboardApp {
     }
   }
 
-  /**
-   * Hide the search form
-   */
+  // Hide the search form
   hideSearchForm() {
     const searchCard = document.getElementById("searchCard");
     const exploreContainer = document.getElementById("exploreSearchContainer");
@@ -465,10 +458,7 @@ class DashboardApp {
     }
   }
 
-  /**
-   * Handle university filter change in search form
-   * Shows/hides custom university input when "other" is selected
-   */
+  // Show custom university input when "other" is selected
   handleSearchUniversityChange(value) {
     const customContainer = document.getElementById("searchCustomUniversityContainer");
     const customInput = document.getElementById("searchCustomUniversity");

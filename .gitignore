@@ -1,41 +1,60 @@
-# Environment & local config
+# Configuration Files (contains sensitive Firebase credentials)
 config.js
+
+# Environment Variables
 .env
+.env.local
+.env.*.local
 
-# Dependencies / tooling
-node_modules
-dist
-build
-
-# OS / editor files
-.DS_Store
-Thumbs.db
-.idea
-.vscode
-
-# API KEYS & SECURITY
-config.js
-config.example.js
-.env
+# API Keys & Secrets (if any are added in the future)
 *.key
+*.pem
 secrets.*
 api-keys.*
+credentials.*
+firebase-credentials.*
 
-# SENSITIVE DATA
-*.env
-*.config
+# Dependencies (if npm/yarn is used in the future)
+node_modules/
+package-lock.json
+yarn.lock
 
-# SYSTEM FILES
-.DS_Store
-Thumbs.db
+# Build & Distribution (if build process is added)
+dist/
+build/
+*.min.js
+*.bundle.js
+
+# Logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
 
-# BACKUP FILES
-*.bak
-*.tmp
+# OS Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
 
-# IDE files
+# IDE & Editor Files
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
+.project
+.classpath
+.settings/
+
+# Temporary Files
+*.tmp
+*.temp
+*.bak
+*.backup
+.cache/
