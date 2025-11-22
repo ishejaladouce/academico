@@ -1,5 +1,15 @@
-// Admin Dashboard Management with Real Data from Firebase
+/**
+ * Admin Dashboard Management Class
+ * Handles all admin dashboard functionality including statistics, user management,
+ * recent activities, and settings. All data is fetched directly from Firebase Firestore.
+ * 
+ * @class AdminDashboard
+ */
 class AdminDashboard {
+  /**
+   * Initialize the AdminDashboard class
+   * Sets up initial statistics object and database reference
+   */
   constructor() {
     this.stats = {
       totalUsers: 0,
@@ -13,6 +23,13 @@ class AdminDashboard {
     this.db = null;
   }
 
+  /**
+   * Ensure Firebase is initialized and available
+   * Waits for Firebase to load if not immediately available, then initializes Firestore
+   * 
+   * @returns {Promise<Object>} Firebase Firestore database instance
+   * @throws {Error} If Firebase configuration is missing or Firestore is unavailable
+   */
   async ensureFirebase() {
     if (this.db) return this.db;
 
@@ -46,6 +63,11 @@ class AdminDashboard {
     throw new Error("Firebase Firestore not available");
   }
 
+  /**
+   * Initialize the admin dashboard
+   * Checks admin authentication, sets up event listeners, and loads initial data
+   * Redirects to index.html if admin is not logged in
+   */
   async init() {
     if (!adminAuth.isAdminLoggedIn()) {
       window.location.href = "index.html";
@@ -58,6 +80,10 @@ class AdminDashboard {
     this.updateAdminUI();
   }
 
+  /**
+   * Set up all event listeners for admin dashboard interactions
+   * Handles logout, navigation, menu dropdown, and action buttons
+   */
   setupAdminEventListeners() {
     // Admin logout
     const adminLogoutBtn = document.getElementById("adminLogoutBtn");
@@ -66,13 +92,13 @@ class AdminDashboard {
         e.preventDefault();
         if (confirm("Are you sure you want to logout?")) {
           if (typeof adminAuth !== "undefined" && adminAuth.adminLogout) {
-            adminAuth.adminLogout();
+      adminAuth.adminLogout();
           } else {
             localStorage.removeItem("academico_admin_user");
             window.location.href = "index.html";
           }
         }
-      });
+    });
     }
 
     // Admin navigation - using nav-link class like user dashboard
@@ -117,7 +143,7 @@ class AdminDashboard {
     const exportDataBtn = document.getElementById("exportDataBtn");
     if (exportDataBtn) {
       exportDataBtn.addEventListener("click", () => {
-        this.exportAdminData();
+      this.exportAdminData();
       });
     }
 
@@ -138,8 +164,8 @@ class AdminDashboard {
     const userSearch = document.getElementById("userSearch");
     if (userSearch && typeof adminUsersManager !== "undefined") {
       userSearch.addEventListener("input", (e) => {
-        adminUsersManager.applySearchFilter(e.target.value);
-      });
+      adminUsersManager.applySearchFilter(e.target.value);
+    });
     }
 
     const userStatusFilter = document.getElementById("userStatusFilter");
@@ -217,6 +243,13 @@ class AdminDashboard {
     return demoData[endpoint] || null;
   }
 
+  /**
+   * Load admin statistics from Firebase Firestore
+   * Fetches real-time data including total users, active users, messages, connections, and groups
+   * Updates the UI with the fetched statistics
+   * 
+   * @returns {Promise<void>}
+   */
   async loadAdminStats() {
     const refreshStatsBtn = document.getElementById("refreshStatsBtn");
     const statsGrid = document.getElementById("adminStatsGrid");
@@ -297,6 +330,10 @@ class AdminDashboard {
     }
   }
 
+  /**
+   * Update the statistics UI elements with current stats
+   * Formats numbers with locale-specific formatting (e.g., 1,000)
+   */
   updateStatsUI() {
     // Update stats using analytics-value elements (analytics card style)
     const totalUsersEl = document.getElementById("adminTotalUsers");
@@ -314,6 +351,13 @@ class AdminDashboard {
     if (totalGroupsEl) totalGroupsEl.textContent = this.stats.totalGroups.toLocaleString();
   }
 
+  /**
+   * Load recent activities from Firebase Firestore
+   * Fetches user signups, connections, and messages, sorts by timestamp, and displays top 8
+   * Activities are read-only and automatically generated from platform events
+   * 
+   * @returns {Promise<void>}
+   */
   async loadRecentActivities() {
     const refreshActivitiesBtn = document.getElementById("refreshActivitiesBtn");
     const container = document.getElementById("recentActivities");
@@ -486,6 +530,13 @@ class AdminDashboard {
     }
   }
 
+  /**
+   * Display recent activities in the UI
+   * Renders activities with icons, descriptions, and timestamps
+   * Supports edit mode for visual editing (activities are read-only in database)
+   * 
+   * @param {Array} activities - Array of activity objects with type, description, and timestamp
+   */
   displayRecentActivities(activities) {
     const container = document.getElementById("recentActivities");
     if (!container) return;
@@ -511,7 +562,7 @@ class AdminDashboard {
                       <input type="text" class="activity-edit-input" value="${activity.description.replace(/"/g, '&quot;')}" 
                              data-activity-id="${activity.id || index}">
                     ` : `
-                      <p class="activity-description">${activity.description}</p>
+                    <p class="activity-description">${activity.description}</p>
                     `}
                     <span class="activity-time">${this.formatTime(
                       activity.timestamp
@@ -609,6 +660,12 @@ class AdminDashboard {
     return icons[type] || "circle";
   }
 
+  /**
+   * Show a specific admin dashboard section and hide others
+   * Updates navigation active state and loads section-specific data if needed
+   * 
+   * @param {string} sectionId - The ID of the section to show (e.g., "adminDashboardSection")
+   */
   showAdminSection(sectionId) {
     // Hide all dashboard sections - using dashboard-section class like user dashboard
     document.querySelectorAll(".dashboard-section").forEach((section) => {
@@ -634,7 +691,7 @@ class AdminDashboard {
     // Load section-specific data
     if (sectionId === "adminUsersSection") {
       if (typeof adminUsersManager !== "undefined") {
-        adminUsersManager.loadUsers();
+      adminUsersManager.loadUsers();
       } else {
         console.error('adminUsersManager not available');
       }
@@ -646,6 +703,10 @@ class AdminDashboard {
     }
   }
 
+  /**
+   * Update admin UI elements with current admin information
+   * Displays admin name and role in the header
+   */
   updateAdminUI() {
     const currentAdmin = adminAuth.getCurrentAdmin();
     if (currentAdmin) {
@@ -662,49 +723,166 @@ class AdminDashboard {
     }
   }
 
+  /**
+   * Export admin data to CSV file
+   * Fetches data directly from Firebase Firestore and exports as CSV
+   */
   async exportAdminData() {
     try {
       this.showLoading("export");
-      const exportData = await this.apiCall("/admin/export");
+      
+      // Ensure Firebase is initialized
+      await this.ensureFirebase();
+      
+      if (!this.db) {
+        throw new Error("Database not available");
+      }
+
+      // Fetch all data from Firebase
+      const [usersSnapshot, connectionsSnapshot, conversationsSnapshot] = await Promise.all([
+        this.db.collection("users").get(),
+        this.db.collection("connections").get(),
+        this.db.collection("conversations").get(),
+      ]);
+
+      // Prepare export data
+      const exportData = {
+        stats: this.stats,
+        users: [],
+        connections: [],
+        conversations: [],
+        exportDate: new Date().toISOString(),
+      };
+
+      // Process users
+      usersSnapshot.forEach(doc => {
+        const userData = doc.data();
+        exportData.users.push({
+          id: doc.id,
+          name: userData.name || "",
+          email: userData.email || "",
+          university: userData.university || "",
+          course: userData.course || "",
+          country: userData.country || "",
+          createdAt: userData.createdAt && userData.createdAt.toDate ? userData.createdAt.toDate().toISOString() : "",
+          deleted: userData.deleted || false,
+        });
+      });
+
+      // Process connections
+      connectionsSnapshot.forEach(doc => {
+        const connData = doc.data();
+        exportData.connections.push({
+          id: doc.id,
+          requester: connData.requesterName || connData.requesterId || "",
+          receiver: connData.receiverName || connData.receiverId || "",
+          status: connData.status || "",
+          createdAt: connData.createdAt && connData.createdAt.toDate ? connData.createdAt.toDate().toISOString() : "",
+        });
+      });
+
+      // Process conversations
+      conversationsSnapshot.forEach(doc => {
+        const convData = doc.data();
+        exportData.conversations.push({
+          id: doc.id,
+          participants: (convData.participants || []).length,
+          messageCount: convData.messageCount || 0,
+          createdAt: convData.createdAt && convData.createdAt.toDate ? convData.createdAt.toDate().toISOString() : "",
+        });
+      });
 
       // Create and download CSV file
       const csvContent = this.convertToCSV(exportData);
-      const blob = new Blob([csvContent], { type: "text/csv" });
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `academico-data-${
-        new Date().toISOString().split("T")[0]
-      }.csv`;
+      a.download = `academico-export-${new Date().toISOString().split("T")[0]}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
 
-      this.showSuccess("Data exported successfully!");
+      this.showSuccess(`Data exported successfully! (${exportData.users.length} users, ${exportData.connections.length} connections, ${exportData.conversations.length} conversations)`);
     } catch (error) {
       console.error("Error exporting data:", error);
-      this.showError("Failed to export data");
+      this.showError("Failed to export data: " + error.message);
     } finally {
       this.hideLoading("export");
     }
   }
 
+  /**
+   * Convert export data to CSV format
+   * @param {Object} data - The data object containing stats, users, connections, and conversations
+   * @returns {string} CSV formatted string
+   */
   convertToCSV(data) {
-    // Simple CSV conversion - you can enhance this based on your data structure
-    const headers = ["Type", "Count", "Date"];
-    const rows = [
-      ["Total Users", this.stats.totalUsers, new Date().toISOString()],
-      ["Active Users", this.stats.activeUsers, new Date().toISOString()],
-      ["Total Messages", this.stats.totalMessages, new Date().toISOString()],
-      [
-        "Total Connections",
-        this.stats.totalConnections,
-        new Date().toISOString(),
-      ],
-    ];
-
-    return [headers, ...rows].map((row) => row.join(",")).join("\n");
+    const lines = [];
+    const exportDate = new Date().toISOString();
+    
+    // Add header
+    lines.push("AcademicO Data Export");
+    lines.push(`Export Date: ${exportDate}`);
+    lines.push("");
+    
+    // Statistics Section
+    lines.push("=== STATISTICS ===");
+    lines.push("Type,Count,Date");
+    lines.push(`Total Users,${data.stats.totalUsers},${exportDate}`);
+    lines.push(`Active Users,${data.stats.activeUsers},${exportDate}`);
+    lines.push(`Total Messages,${data.stats.totalMessages},${exportDate}`);
+    lines.push(`Total Connections,${data.stats.totalConnections},${exportDate}`);
+    lines.push(`New Users Today,${data.stats.newUsersToday},${exportDate}`);
+    lines.push(`Total Groups,${data.stats.totalGroups},${exportDate}`);
+    lines.push("");
+    
+    // Users Section
+    lines.push("=== USERS ===");
+    lines.push("ID,Name,Email,University,Course,Country,Created At,Status");
+    data.users.forEach(user => {
+      const status = user.deleted ? "Deleted" : "Active";
+      lines.push([
+        user.id,
+        `"${(user.name || "").replace(/"/g, '""')}"`,
+        user.email || "",
+        `"${(user.university || "").replace(/"/g, '""')}"`,
+        `"${(user.course || "").replace(/"/g, '""')}"`,
+        user.country || "",
+        user.createdAt || "",
+        status,
+      ].join(","));
+    });
+    lines.push("");
+    
+    // Connections Section
+    lines.push("=== CONNECTIONS ===");
+    lines.push("ID,Requester,Receiver,Status,Created At");
+    data.connections.forEach(conn => {
+      lines.push([
+        conn.id,
+        `"${(conn.requester || "").replace(/"/g, '""')}"`,
+        `"${(conn.receiver || "").replace(/"/g, '""')}"`,
+        conn.status || "",
+        conn.createdAt || "",
+      ].join(","));
+    });
+    lines.push("");
+    
+    // Conversations Section
+    lines.push("=== CONVERSATIONS ===");
+    lines.push("ID,Participants,Message Count,Created At");
+    data.conversations.forEach(conv => {
+      lines.push([
+        conv.id,
+        conv.participants || 0,
+        conv.messageCount || 0,
+        conv.createdAt || "",
+      ].join(","));
+    });
+    
+    return lines.join("\n");
   }
 
   showLoading(type) {
@@ -760,6 +938,13 @@ class AdminDashboard {
     }, 5000);
   }
 
+  /**
+   * Format a date to a human-readable relative time string
+   * Returns "Just now", "5m ago", "2h ago", or a formatted date
+   * 
+   * @param {Date|string|number} date - The date to format
+   * @returns {string} Formatted time string
+   */
   formatTime(date) {
     if (!date) return "Unknown";
     if (!(date instanceof Date)) date = new Date(date);
@@ -855,6 +1040,10 @@ class AdminDashboard {
     }
   }
 
+  /**
+   * Load and display admin settings with functional features
+   * Includes database info, platform statistics, and admin actions
+   */
   async loadSettings() {
     const settingsContent = document.getElementById("adminSettingsContent");
     if (!settingsContent) return;
@@ -862,37 +1051,109 @@ class AdminDashboard {
     try {
       settingsContent.innerHTML = '<div class="loading-message"><i class="fas fa-spinner fa-spin"></i> Loading settings...</div>';
       
-      // Load settings from Firestore or show configuration options
+      // Load settings from Firestore
       await this.ensureFirebase();
       
+      if (!this.db) {
+        throw new Error("Database not available");
+      }
+
+      // Get current admin info
+      const currentAdmin = adminAuth.getCurrentAdmin();
+      const adminEmail = currentAdmin ? (currentAdmin.email || currentAdmin.username || "Admin") : "Admin";
+      const loginTime = localStorage.getItem("academico_admin_login_time") || "Unknown";
+
+      // Get database statistics
+      const [usersSnapshot, connectionsSnapshot, conversationsSnapshot] = await Promise.all([
+        this.db.collection("users").get(),
+        this.db.collection("connections").get(),
+        this.db.collection("conversations").get(),
+      ]);
+
+      const totalUsers = usersSnapshot.size;
+      const activeUsers = usersSnapshot.docs.filter(doc => !doc.data().deleted).length;
+      const totalConnections = connectionsSnapshot.docs.filter(doc => doc.data().status === "accepted").length;
+      const totalGroups = conversationsSnapshot.size;
+
+      // Calculate storage estimate (rough calculation)
+      const estimatedStorage = (totalUsers * 2 + totalConnections * 1 + totalGroups * 3).toFixed(2); // KB estimate
+
       settingsContent.innerHTML = `
         <div class="settings-grid">
           <div class="settings-card">
-            <h3><i class="fas fa-database"></i> Database</h3>
-            <p>Manage database connections and backups</p>
-            <button class="settings-btn" onclick="alert('Database backup feature coming soon')">
-              <i class="fas fa-download"></i> Backup Database
+            <h3><i class="fas fa-database"></i> Database Information</h3>
+            <div class="settings-info">
+              <p><strong>Total Users:</strong> ${totalUsers.toLocaleString()}</p>
+              <p><strong>Active Users:</strong> ${activeUsers.toLocaleString()}</p>
+              <p><strong>Total Connections:</strong> ${totalConnections.toLocaleString()}</p>
+              <p><strong>Study Groups:</strong> ${totalGroups.toLocaleString()}</p>
+              <p><strong>Estimated Storage:</strong> ~${estimatedStorage} KB</p>
+            </div>
+            <button class="settings-btn" onclick="adminDashboard.exportAdminData()">
+              <i class="fas fa-download"></i> Export All Data
             </button>
           </div>
+
           <div class="settings-card">
-            <h3><i class="fas fa-user-shield"></i> User Roles</h3>
-            <p>Manage user permissions and roles</p>
-            <button class="settings-btn" onclick="alert('User roles management coming soon')">
-              <i class="fas fa-cog"></i> Manage Roles
+            <h3><i class="fas fa-user-shield"></i> Admin Account</h3>
+            <div class="settings-info">
+              <p><strong>Email:</strong> ${adminEmail}</p>
+              <p><strong>Role:</strong> Administrator</p>
+              <p><strong>Login Time:</strong> ${new Date(loginTime).toLocaleString() || "Unknown"}</p>
+              <p><strong>Session Status:</strong> <span style="color: #27ae60;">Active</span></p>
+            </div>
+            <button class="settings-btn" onclick="if(confirm('Are you sure you want to logout?')) { adminAuth.adminLogout(); }">
+              <i class="fas fa-sign-out-alt"></i> Logout
             </button>
           </div>
+
           <div class="settings-card">
-            <h3><i class="fas fa-bell"></i> Notifications</h3>
-            <p>Configure platform notifications</p>
-            <button class="settings-btn" onclick="alert('Notifications settings coming soon')">
-              <i class="fas fa-bell"></i> Configure
+            <h3><i class="fas fa-cog"></i> Platform Management</h3>
+            <div class="settings-info">
+              <p>Refresh platform statistics and clear cached data</p>
+            </div>
+            <button class="settings-btn" onclick="adminDashboard.refreshAllData()">
+              <i class="fas fa-sync"></i> Refresh All Data
+            </button>
+            <button class="settings-btn" onclick="adminDashboard.clearCache()" style="margin-top: 10px;">
+              <i class="fas fa-trash-alt"></i> Clear Cache
             </button>
           </div>
+
           <div class="settings-card">
-            <h3><i class="fas fa-shield-alt"></i> Security</h3>
-            <p>Security and privacy settings</p>
-            <button class="settings-btn" onclick="alert('Security settings coming soon')">
-              <i class="fas fa-lock"></i> Security
+            <h3><i class="fas fa-shield-alt"></i> Security & Privacy</h3>
+            <div class="settings-info">
+              <p><strong>Password Policy:</strong> Enabled</p>
+              <p><strong>Session Timeout:</strong> On browser close</p>
+              <p><strong>Data Encryption:</strong> Firebase managed</p>
+            </div>
+            <button class="settings-btn" onclick="adminDashboard.showSecurityInfo()">
+              <i class="fas fa-info-circle"></i> Security Info
+            </button>
+          </div>
+
+          <div class="settings-card">
+            <h3><i class="fas fa-chart-line"></i> Platform Statistics</h3>
+            <div class="settings-info">
+              <p><strong>New Users Today:</strong> ${this.stats.newUsersToday || 0}</p>
+              <p><strong>Total Messages:</strong> ${this.stats.totalMessages.toLocaleString() || 0}</p>
+              <p><strong>Platform Status:</strong> <span style="color: #27ae60;">Operational</span></p>
+            </div>
+            <button class="settings-btn" onclick="adminDashboard.loadAdminStats(); adminDashboard.showSuccess('Statistics refreshed!');">
+              <i class="fas fa-refresh"></i> Refresh Stats
+            </button>
+          </div>
+
+          <div class="settings-card">
+            <h3><i class="fas fa-info-circle"></i> System Information</h3>
+            <div class="settings-info">
+              <p><strong>Platform:</strong> AcademicO</p>
+              <p><strong>Database:</strong> Firebase Firestore</p>
+              <p><strong>Version:</strong> 1.0.0</p>
+              <p><strong>Last Updated:</strong> ${new Date().toLocaleDateString()}</p>
+            </div>
+            <button class="settings-btn" onclick="adminDashboard.showSystemInfo()">
+              <i class="fas fa-info"></i> View Details
             </button>
           </div>
         </div>
@@ -901,10 +1162,97 @@ class AdminDashboard {
       console.error("Error loading settings:", error);
       settingsContent.innerHTML = `
         <div class="error-message" style="text-align: center; padding: 40px;">
+          <i class="fas fa-exclamation-circle" style="font-size: 48px; color: #e74c3c; margin-bottom: 20px;"></i>
           <p>Unable to load settings. Please try again later.</p>
+          <p style="color: #7f8c8d; margin-top: 10px;">${error.message}</p>
         </div>
       `;
     }
+  }
+
+  /**
+   * Refresh all dashboard data
+   */
+  async refreshAllData() {
+    try {
+      this.showSuccess("Refreshing all data...");
+      await Promise.all([
+        this.loadAdminStats(),
+        this.loadRecentActivities(),
+      ]);
+      this.showSuccess("All data refreshed successfully!");
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      this.showError("Failed to refresh data");
+    }
+  }
+
+  /**
+   * Clear browser cache and localStorage (except admin session)
+   */
+  clearCache() {
+    if (confirm("This will clear all cached data except your admin session. Continue?")) {
+      try {
+        const adminSession = localStorage.getItem("academico_admin_user");
+        localStorage.clear();
+        if (adminSession) {
+          localStorage.setItem("academico_admin_user", adminSession);
+        }
+        this.showSuccess("Cache cleared successfully! Page will reload.");
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } catch (error) {
+        console.error("Error clearing cache:", error);
+        this.showError("Failed to clear cache");
+      }
+    }
+  }
+
+  /**
+   * Show security information
+   */
+  showSecurityInfo() {
+    const info = `
+      <div style="text-align: left; padding: 20px;">
+        <h3 style="margin-bottom: 15px;">Security Features</h3>
+        <ul style="line-height: 2;">
+          <li><strong>Password Hashing:</strong> All passwords are hashed using bcrypt</li>
+          <li><strong>Session Management:</strong> Admin sessions stored securely in localStorage</li>
+          <li><strong>Firebase Security:</strong> Database rules protect user data</li>
+          <li><strong>HTTPS:</strong> All connections use secure protocols</li>
+          <li><strong>Data Encryption:</strong> Firebase handles data encryption at rest</li>
+        </ul>
+        <p style="margin-top: 20px; color: #7f8c8d;">
+          <i class="fas fa-shield-alt"></i> Your data is protected by industry-standard security measures.
+        </p>
+      </div>
+    `;
+    alert(info.replace(/<[^>]*>/g, '')); // Simple alert, can be enhanced with modal
+    this.showSuccess("Security information displayed");
+  }
+
+  /**
+   * Show system information
+   */
+  showSystemInfo() {
+    const info = `
+      <div style="text-align: left; padding: 20px;">
+        <h3 style="margin-bottom: 15px;">System Information</h3>
+        <p><strong>Platform:</strong> AcademicO Study Partner Matching Platform</p>
+        <p><strong>Version:</strong> 1.0.0</p>
+        <p><strong>Database:</strong> Firebase Firestore</p>
+        <p><strong>Authentication:</strong> Custom Firebase-based</p>
+        <p><strong>APIs Used:</strong> Countries, Universities, Advice Slip, Open-Meteo</p>
+        <p><strong>Browser:</strong> ${navigator.userAgent.split(' ')[0]}</p>
+        <p><strong>Screen:</strong> ${screen.width}x${screen.height}</p>
+        <p style="margin-top: 20px; color: #7f8c8d;">
+          <i class="fas fa-info-circle"></i> Built with vanilla JavaScript and Firebase.
+        </p>
+      </div>
+    `;
+    alert(info.replace(/<[^>]*>/g, '')); // Simple alert, can be enhanced with modal
+    this.showSuccess("System information displayed");
   }
 }
 

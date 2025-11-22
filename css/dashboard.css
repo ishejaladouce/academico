@@ -2410,6 +2410,27 @@ td {
   font-size: 14px;
 }
 
+.settings-info {
+  text-align: left;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 3px solid #2c5aa0;
+}
+
+.settings-info p {
+  margin: 8px 0;
+  color: #495057;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.settings-info p strong {
+  color: #2c3e50;
+  font-weight: 600;
+}
+
 .settings-btn {
   background: linear-gradient(135deg, #2c5aa0 0%, #4a90e2 100%);
   color: white;
