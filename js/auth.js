@@ -93,10 +93,42 @@ class AuthManager {
     });
   }
 
+  // Ensure Firebase is ready before using it
+  async ensureFirebase() {
+    if (this.db) return this.db;
+
+    // Wait for Firebase to be available
+    let attempts = 0;
+    while ((typeof firebase === "undefined" || !firebase.firestore) && attempts < 20) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      attempts++;
+    }
+
+    if (typeof firebase !== "undefined" && firebase.firestore) {
+      const firebaseConfig = window.__ACADEMICO_CONFIG?.firebase;
+      if (!firebaseConfig) {
+        throw new Error("Firebase configuration is missing!");
+      }
+      
+      // Initialize Firebase if not already initialized
+      if (!firebase.apps || firebase.apps.length === 0) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      
+      this.db = firebase.firestore();
+      return this.db;
+    }
+
+    throw new Error("Firebase Firestore not available");
+  }
+
   // User registration
  
   async registerUser(userData) {
     try {
+      // Ensure Firebase is ready
+      await this.ensureFirebase();
+
       // Validate required fields
       if (!userData.password) {
         throw new Error("Password is required");
@@ -149,13 +181,8 @@ class AuthManager {
   // User login
   async loginUser(email, password) {
     try {
-      if (!this.db) {
-        await this.init();
-      }
-      
-      if (!this.db) {
-        throw new Error("Database not available. Please refresh the page.");
-      }
+      // Ensure Firebase is ready
+      await this.ensureFirebase();
       
       // Search for the user in Firestore
       const snapshot = await this.db
@@ -233,6 +260,9 @@ class AuthManager {
   // Search users based on filters - ENHANCED with country/university filtering
   async searchUsers(filters) {
     try {
+      // Ensure Firebase is ready
+      await this.ensureFirebase();
+      
       let query = this.db.collection("users");
       const normalizedCourse = filters.course
         ? filters.course.trim().toLowerCase()
@@ -300,6 +330,9 @@ class AuthManager {
   // Get all users for admin dashboard
   async getAllUsers() {
     try {
+      // Ensure Firebase is ready
+      await this.ensureFirebase();
+      
       const snapshot = await this.db.collection("users").limit(200).get();
       return snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -340,6 +373,9 @@ class AuthManager {
   // Update user profile
   async updateUserProfile(userId, updates) {
     try {
+      // Ensure Firebase is ready
+      await this.ensureFirebase();
+      
       const normalizedUpdates = {
         ...updates,
       };
