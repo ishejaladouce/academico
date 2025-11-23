@@ -7,7 +7,8 @@ class AcademicOApp {
 
   init() {
     this.setupEventListeners();
-    this.animateStatistics();
+    // Delay statistics loading slightly to ensure Firebase is ready
+    setTimeout(() => this.animateStatistics(), 500);
     this.updateDynamicContent();
     this.setupEnhancedSearch();
     this.checkExistingSession();
@@ -888,6 +889,13 @@ class AcademicOApp {
 
   async animateStatistics() {
     try {
+      // Wait a bit for Firebase to initialize if needed
+      let attempts = 0;
+      while (attempts < 10 && (!authManager || !authManager.db)) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        attempts++;
+      }
+      
       const stats = await this.getLiveStatistics();
       
       console.log("Fetched statistics:", stats);
@@ -931,10 +939,12 @@ class AcademicOApp {
     try {
       console.log("Fetching live statistics from Firebase...");
       
-      // Ensure Firebase is initialized
-      if (!authManager.db) {
-        console.log("Initializing Firebase...");
-        await authManager.init();
+      // Ensure Firebase is initialized using the robust ensureFirebase method
+      try {
+        await authManager.ensureFirebase();
+      } catch (error) {
+        console.error("Failed to initialize Firebase:", error);
+        throw error;
       }
       
       if (!authManager.db) {

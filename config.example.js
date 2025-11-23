@@ -5,13 +5,13 @@
 window.__ACADEMICO_CONFIG = {
   firebase: {
     apiKey: "YOUR_API_KEY_HERE",
-    authDomain: "your-project.firebaseapp.com",
-    databaseURL: "https://your-project-default-rtdb.firebaseio.com",
-    projectId: "your-project-id",
-    storageBucket: "your-project.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID",
-    measurementId: "YOUR_MEASUREMENT_ID",
+    authDomain: "academico-23423.firebaseapp.com",
+    databaseURL: "https://academico-23423-default-rtdb.firebaseio.com",
+    projectId: "academico-23423",
+    storageBucket: "academico-23423.appspot.com",
+    messagingSenderId: "103950801109",
+    appId: "1:103950801109:web:1234567890abcdef123456",
+    measurementId: "G-1234567890",
   },
   apis: {
     worldTime: "https://ipapi.co/json/",

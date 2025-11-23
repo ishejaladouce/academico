@@ -95,22 +95,45 @@ class AuthManager {
 
   // Ensure Firebase is ready before using it
   async ensureFirebase() {
-    if (this.db) return this.db;
+    if (this.db) {
+      console.log("Firebase already initialized, using existing db");
+      return this.db;
+    }
 
+    console.log("Ensuring Firebase is ready...");
+    
     // First, make sure Firebase scripts are loaded
-    await this.loadFirebase();
+    try {
+      console.log("Loading Firebase scripts...");
+      await Promise.race([
+        this.loadFirebase(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Firebase script loading timeout")), 10000)
+        )
+      ]);
+      console.log("Firebase scripts loaded");
+    } catch (error) {
+      console.error("Error loading Firebase scripts:", error);
+      throw new Error("Failed to load Firebase scripts. Please check your internet connection and refresh the page.");
+    }
 
     // Wait for Firebase to be available
+    console.log("Waiting for Firebase to be available...");
     let attempts = 0;
-    while ((typeof firebase === "undefined" || !firebase.firestore) && attempts < 30) {
+    while ((typeof firebase === "undefined" || !firebase.firestore) && attempts < 50) {
       await new Promise((resolve) => setTimeout(resolve, 100));
       attempts++;
+      if (attempts % 10 === 0) {
+        console.log(`Waiting for Firebase... (attempt ${attempts}/50)`);
+      }
     }
 
     if (typeof firebase === "undefined" || !firebase.firestore) {
       console.error("Firebase Firestore failed to load after waiting");
       throw new Error("Firebase Firestore not available. Please refresh the page.");
     }
+
+    console.log("Firebase is available, initializing...");
 
     const firebaseConfig = window.__ACADEMICO_CONFIG?.firebase;
     if (!firebaseConfig) {
@@ -120,7 +143,11 @@ class AuthManager {
     // Initialize Firebase if not already initialized
     try {
       if (!firebase.apps || firebase.apps.length === 0) {
+        console.log("Initializing Firebase app...");
         firebase.initializeApp(firebaseConfig);
+        console.log("Firebase app initialized");
+      } else {
+        console.log("Firebase app already initialized");
       }
     } catch (error) {
       // Ignore duplicate app errors
@@ -128,13 +155,16 @@ class AuthManager {
         console.error("Firebase initialization error:", error);
         throw error;
       }
+      console.log("Firebase app already exists (duplicate-app error ignored)");
     }
     
+    console.log("Getting Firestore instance...");
     this.db = firebase.firestore();
     if (!this.db) {
       throw new Error("Failed to initialize Firestore database");
     }
     
+    console.log("Firebase Firestore ready!");
     return this.db;
   }
 
