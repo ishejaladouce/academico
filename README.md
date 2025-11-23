@@ -6,7 +6,7 @@ AcademicO is a web application designed to address the challenge of academic iso
 
 ## Production Deployment
 
-**Application URL:** https://academico.isheja.tech  
+**Application URL:** http://academico.isheja.tech  
 **Demo Video:** [------]
 
 ## Features and Functionality
