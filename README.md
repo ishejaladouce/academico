@@ -6,8 +6,8 @@ AcademicO is a web application designed to address the challenge of academic iso
 
 ## Production Deployment
 
-**Application URL:** http://academico.isheja.tech  
-**Demo Video:** [------]
+**Live Application:** http://academico.isheja.tech
+**Demo Video:** [To be added]
 
 ## Features and Functionality
 
@@ -23,6 +23,7 @@ AcademicO is a web application designed to address the challenge of academic iso
 ### User Experience
 - Responsive design optimized for desktop and mobile devices
 - Intuitive navigation and user interface
+- Light and dark mode theme settings for user preference
 - Comprehensive error handling with user-friendly feedback
 - Data presentation with sorting and filtering capabilities
 
@@ -101,30 +102,204 @@ cp config.example.js config.js
 
 ## API Integration and Attribution
 
-This application integrates multiple external APIs to enhance functionality:
+This application integrates multiple external APIs to enhance functionality. All APIs are properly attributed and used in compliance with their terms of service.
 
-- **WorldTimeAPI** (https://worldtimeapi.org/) - Timezone detection and compatibility scoring
-- **Open-Meteo** (https://open-meteo.com/) - Weather-based study recommendations
-- **Advice Slip API** (https://api.adviceslip.com/) - Motivational study quotes
-- **HipoLabs Universities API** (http://universities.hipolabs.com/) - Global university database
-- **RestCountries API** (https://restcountries.com/) - Country information and filtering
+### External APIs Used
 
-All API integrations include comprehensive error handling with fallback data mechanisms to ensure application reliability during external service unavailability.
+1. **ipapi.co / WorldTimeAPI**
+   - **URL:** https://ipapi.co/json/
+   - **Purpose:** Timezone detection and compatibility scoring for study partner matching
+   - **Attribution:** Data provided by ipapi.co - IP Geolocation API
+   - **Usage:** Detects user timezone to match students with compatible study schedules
 
-## Deployment Architecture
+2. **Open-Meteo Weather API**
+   - **URL:** https://api.open-meteo.com/v1/forecast
+   - **Purpose:** Weather-based study recommendations and environmental context
+   - **Attribution:** Weather data provided by Open-Meteo (https://open-meteo.com/)
+   - **Usage:** Provides weather information to suggest optimal study conditions
 
-### Infrastructure Components
-- **Load Balancer:** Distributes incoming traffic between web servers
-- **Web Servers:** Multiple application servers for high availability
+3. **Advice Slip API**
+   - **URL:** https://api.adviceslip.com/advice
+   - **Purpose:** Motivational study quotes and encouragement
+   - **Attribution:** Quotes provided by Advice Slip API (https://api.adviceslip.com/)
+   - **Usage:** Displays motivational quotes during study breaks
+
+4. **HipoLabs Universities API**
+   - **URL:** https://raw.githubusercontent.com/Hipo/university-domains-list/master/world_universities_and_domains.json
+   - **Purpose:** Global university database for user registration and filtering
+   - **Attribution:** University data provided by HipoLabs (https://github.com/Hipo/university-domains-list)
+   - **Usage:** Populates university dropdowns and enables university-based search filtering
+
+5. **RestCountries API**
+   - **URL:** https://restcountries.com/v3.1/all
+   - **Purpose:** Country information and filtering capabilities
+   - **Attribution:** Country data provided by RestCountries API (https://restcountries.com/)
+   - **Usage:** Provides country list for registration and enables country-based partner search
+
+### API Security and Error Handling
+
+- **No API Keys Required:** All APIs used are free and do not require authentication keys
+- **Secure Implementation:** All API calls are made client-side with proper error handling
+- **Fallback Mechanisms:** Comprehensive error handling with fallback data ensures application reliability during external service unavailability
+- **Rate Limiting:** API calls are optimized to minimize requests and respect API rate limits
+- **Error Recovery:** Automatic retry logic and graceful degradation when APIs are unavailable
+
+## Server Deployment Instructions
+
+### Prerequisites for Deployment
+- Access to web servers (Web01 and Web02)
+- Access to load balancer server (Lb01)
+- SSH access to all servers
+- Git installed on all servers
+- Nginx installed on all servers
+- Domain DNS configured to point to load balancer IP
+
+### Step-by-Step Deployment Process
+
+#### Option 1: Clone Repository on Server (Recommended)
+
+**On Each Web Server (Web01 and Web02):**
+
+1. **Connect to the server:**
+   ```bash
+   ssh ubuntu@<server-ip>
+   ```
+
+2. **Update system packages:**
+   ```bash
+   sudo apt update
+   sudo apt upgrade -y
+   ```
+
+3. **Install required software:**
+   ```bash
+   sudo apt install nginx git -y
+   ```
+
+4. **Create application directory:**
+   ```bash
+   sudo mkdir -p /var/www/academico
+   sudo chown -R ubuntu:ubuntu /var/www/academico
+   ```
+
+5. **Clone the repository:**
+   ```bash
+   cd /var/www
+   git clone https://github.com/ishejaladouce/academico.git academico
+   cd academico
+   ```
+
+6. **Create config.js with production Firebase credentials:**
+   ```bash
+   sudo nano /var/www/academico/config.js
+   ```
+   Paste your Firebase configuration and save.
+
+7. **Set proper permissions:**
+   ```bash
+   sudo chown -R www-data:www-data /var/www/academico
+   sudo chown -R ubuntu:ubuntu /var/www/academico/.git
+   ```
+
+8. **Configure Nginx:**
+   ```bash
+   sudo nano /etc/nginx/sites-available/academico
+   ```
+   Add server configuration pointing to `/var/www/academico`
+
+9. **Enable site and restart Nginx:**
+   ```bash
+   sudo ln -s /etc/nginx/sites-available/academico /etc/nginx/sites-enabled/
+   sudo rm /etc/nginx/sites-enabled/default
+   sudo nginx -t
+   sudo systemctl restart nginx
+   ```
+
+#### Option 2: Transfer Files Using rsync
+
+**From your local machine:**
+
+1. **Transfer files to Web01:**
+   ```bash
+   rsync -avz --exclude 'config.js' --exclude '.git' --exclude 'node_modules' \
+     ./ ubuntu@<web01-ip>:/var/www/academico/
+   ```
+
+2. **Transfer files to Web02:**
+   ```bash
+   rsync -avz --exclude 'config.js' --exclude '.git' --exclude 'node_modules' \
+     ./ ubuntu@<web02-ip>:/var/www/academico/
+   ```
+
+3. **Create config.js on each server** (as shown in Option 1, step 6)
+
+#### Load Balancer Configuration
+
+**On Load Balancer (Lb01):**
+
+1. **Connect and install Nginx:**
+   ```bash
+   ssh ubuntu@<lb01-ip>
+   sudo apt update
+   sudo apt install nginx -y
+   ```
+
+2. **Create load balancer configuration:**
+   ```bash
+   sudo nano /etc/nginx/sites-available/academico-lb
+   ```
+   Configure upstream servers pointing to Web01 and Web02
+
+3. **Enable and restart:**
+   ```bash
+   sudo ln -s /etc/nginx/sites-available/academico-lb /etc/nginx/sites-enabled/
+   sudo rm /etc/nginx/sites-enabled/default
+   sudo nginx -t
+   sudo systemctl restart nginx
+   ```
+
+4. **Configure firewall:**
+   ```bash
+   sudo ufw allow 'Nginx Full'
+   sudo ufw allow OpenSSH
+   sudo ufw enable
+   ```
+
+### Updating the Deployment
+
+**To update the application after code changes:**
+
+1. **Commit and push changes to repository:**
+   ```bash
+   git add .
+   git commit -m "Your commit message"
+   git push
+   ```
+
+2. **Pull updates on each web server:**
+   ```bash
+   ssh ubuntu@<server-ip>
+   cd /var/www/academico
+   sudo chown -R ubuntu:ubuntu /var/www/academico
+   git pull
+   sudo chown -R www-data:www-data /var/www/academico
+   sudo chown -R ubuntu:ubuntu /var/www/academico/.git
+   ```
+
+### Deployment Architecture
+
+**Infrastructure Components:**
+- **Load Balancer (Lb01):** Distributes incoming traffic between web servers
+- **Web Server 01 (Web01):** Primary application server
+- **Web Server 02 (Web02):** Secondary application server for high availability
 - **Domain:** academico.isheja.tech configured for public access
 
-### Deployment Configuration
-The application is deployed across a load-balanced infrastructure with the following characteristics:
-
+**Deployment Configuration:**
 - Load distribution using least connections algorithm
 - Health monitoring with automatic failover capabilities
 - Persistent connections for optimized performance
 - Security headers and proper proxy configuration
+- DNS configured to route traffic through load balancer
 
 ## Verification and Testing
 
