@@ -6,8 +6,8 @@ AcademicO is a web application designed to address the challenge of academic iso
 
 ## Production Deployment
 
-**Live Application:** http://academico.isheja.tech
-**Demo Video:** [To be added]
+**Live Application:** [ http://academico.isheja.tech ]
+**Demo Video:** [ https://www.youtube.com/watch?v=FlNTMdNFgLA ]
 
 ## Features and Functionality
 
@@ -269,7 +269,7 @@ This application integrates multiple external APIs to enhance functionality. All
 
 **To update the application after code changes:**
 
-1. **Commit and push changes to repository:**
+1. **Commit and push changes to the repository:**
    ```bash
    git add .
    git commit -m "Your commit message"
@@ -295,11 +295,11 @@ This application integrates multiple external APIs to enhance functionality. All
 - **Domain:** academico.isheja.tech configured for public access
 
 **Deployment Configuration:**
-- Load distribution using least connections algorithm
+- Load distribution using the least connections algorithm
 - Health monitoring with automatic failover capabilities
 - Persistent connections for optimized performance
 - Security headers and proper proxy configuration
-- DNS configured to route traffic through load balancer
+- DNS configured to route traffic through the load balancer
 
 ## Verification and Testing
 
@@ -307,13 +307,13 @@ This application integrates multiple external APIs to enhance functionality. All
 - Request distribution confirmed between multiple servers
 - Health monitoring actively verifies server status
 - Failover functionality tested and operational
-- Session persistence maintained across requests
+- Session persistence is maintained across requests
 
 ### Application Testing
 - User registration and authentication workflows verified
 - Search functionality with all filter combinations tested
 - Real-time messaging system operational
-- Connection request management functioning correctly
+- Connection request management is functioning correctly
 - Administrative dashboard operations validated
 - Cross-browser compatibility confirmed
 - Mobile responsiveness verified across devices
@@ -324,27 +324,24 @@ This application integrates multiple external APIs to enhance functionality. All
 - Comprehensive input validation throughout the application
 - Error handling with appropriate user feedback
 - Nginx security headers configured on all servers
-- API keys properly managed and secured
+- API keys are properly managed and secured
 
 ## Usage Instructions
 
 ### Student Usage
-1. Register account using email and password
-2. Complete profile information including course, university, and availability preferences
+1. Register an account using email and password
+2. Complete profile information, including course, university, and availability preferences
 3. Utilize search functionality with advanced filters to locate compatible study partners
 4. Send connection requests to identified matches
 5. Engage in real-time communication with connected partners
 6. Manage academic connections and study collaborations
 
 ### Administrator Usage
-1. Access administrative login portal
+1. Access the  administrative login portal
 2. Review platform statistics and user analytics
 3. Manage user accounts and platform content
 4. Monitor system health and performance metrics
 
-## Support and Maintenance
-
-For technical support or platform issues, contact the development team. Regular server monitoring and maintenance procedures ensure platform reliability and consistent performance.
 
 **Note**: Remember to never commit `config.js` to version control. Always use `config.example.js` as a template and keep your actual configuration local.
 
