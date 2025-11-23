@@ -97,29 +97,45 @@ class AuthManager {
   async ensureFirebase() {
     if (this.db) return this.db;
 
+    // First, make sure Firebase scripts are loaded
+    await this.loadFirebase();
+
     // Wait for Firebase to be available
     let attempts = 0;
-    while ((typeof firebase === "undefined" || !firebase.firestore) && attempts < 20) {
+    while ((typeof firebase === "undefined" || !firebase.firestore) && attempts < 30) {
       await new Promise((resolve) => setTimeout(resolve, 100));
       attempts++;
     }
 
-    if (typeof firebase !== "undefined" && firebase.firestore) {
-      const firebaseConfig = window.__ACADEMICO_CONFIG?.firebase;
-      if (!firebaseConfig) {
-        throw new Error("Firebase configuration is missing!");
-      }
-      
-      // Initialize Firebase if not already initialized
+    if (typeof firebase === "undefined" || !firebase.firestore) {
+      console.error("Firebase Firestore failed to load after waiting");
+      throw new Error("Firebase Firestore not available. Please refresh the page.");
+    }
+
+    const firebaseConfig = window.__ACADEMICO_CONFIG?.firebase;
+    if (!firebaseConfig) {
+      throw new Error("Firebase configuration is missing!");
+    }
+    
+    // Initialize Firebase if not already initialized
+    try {
       if (!firebase.apps || firebase.apps.length === 0) {
         firebase.initializeApp(firebaseConfig);
       }
-      
-      this.db = firebase.firestore();
-      return this.db;
+    } catch (error) {
+      // Ignore duplicate app errors
+      if (error.code !== 'app/duplicate-app') {
+        console.error("Firebase initialization error:", error);
+        throw error;
+      }
     }
-
-    throw new Error("Firebase Firestore not available");
+    
+    this.db = firebase.firestore();
+    if (!this.db) {
+      throw new Error("Failed to initialize Firestore database");
+    }
+    
+    return this.db;
   }
 
   // User registration
